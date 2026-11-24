@@ -275,3 +275,11 @@ textarea.input { resize: none; }
 .note-row { align-items: flex-start; }
 .note-text { white-space: pre-wrap; word-break: break-word; margin-top: 3px; }
 .mood-mini { min-width: 24px; height: 24px; border-radius: 12px; background: var(--fire); color: var(--bg); font-weight: 700; font-size: 13px; display: grid; place-items: center; }
+
+/* Фон за часом доби */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(to bottom, color-mix(in srgb, var(--sky-top) 30%, transparent), transparent 4%),
+    radial-gradient(120% 55% at 50% -8%, color-mix(in srgb, var(--sky-top) 46%, transparent), transparent 72%),
+    radial-gradient(130% 45% at 50% 108%, color-mix(in srgb, var(--sky-bottom) 22%, transparent), transparent 70%); }
+.main { position: relative; z-index: 1; }
