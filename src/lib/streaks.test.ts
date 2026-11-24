@@ -164,3 +164,38 @@ describe('самопочуття', () => {
     expect(eff.diff).toBe(2)
   })
 })
+
+describe('налаштовувані правила дня', () => {
+  const ms = [habit('m1', 'morning'), habit('m2', 'morning'), habit('m3', 'morning')]
+  const es = [habit('e1', 'evening'), habit('e2', 'evening')]
+  const mk = () => { const s = mkState([...ms, ...es]); s.habits.forEach(h => (h.createdAt = addDays(T, -3))); return s }
+  it('2 ранкових + 1 вечірня: 1 ранкова — неповний', () => {
+    const s = mk(); s.settings.rules = { morningMin: 2, eveningMin: 1, totalMin: 0, grace: true }
+    done(s, 'm1', 1); done(s, 'e1', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('partial')
+    done(s, 'm2', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('full')
+  })
+  it('мінімум усього 4', () => {
+    const s = mk(); s.settings.rules = { morningMin: 1, eveningMin: 1, totalMin: 4, grace: true }
+    done(s, 'm1', 1); done(s, 'e1', 1); done(s, 'e2', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('partial')
+    done(s, 'm3', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('full')
+  })
+  it('вечірніх не обовʼязково (0)', () => {
+    const s = mk(); s.settings.rules = { morningMin: 1, eveningMin: 0, totalMin: 1, grace: true }
+    done(s, 'm1', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('full')
+  })
+  it('пощаду вимкнено — неповний день ламає стрік', () => {
+    const s = mk(); s.settings.rules = { morningMin: 1, eveningMin: 1, totalMin: 1, grace: false }
+    done(s, 'm1', 1, 2, 3); done(s, 'e1', 1, 3)
+    expect(globalStreak(s, T).count).toBe(1)
+  })
+  it('мінімум більший за кількість справ — обрізається', () => {
+    const s = mk(); s.settings.rules = { morningMin: 10, eveningMin: 10, totalMin: 20, grace: true }
+    done(s, 'm1', 1); done(s, 'm2', 1); done(s, 'm3', 1); done(s, 'e1', 1); done(s, 'e2', 1)
+    expect(dayStatus(s, addDays(T, -1), T)).toBe('full')
+  })
+})

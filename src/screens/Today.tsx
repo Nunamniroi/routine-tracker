@@ -4,9 +4,9 @@ import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } 
 import { CSS } from '@dnd-kit/utilities'
 import { justDragged, markDragEnd } from '../ui/dragGuard'
 import { useStore } from '../lib/store'
-import { activeHabits, dayParts, globalStreak, habitStreak, isPaused, isScheduled, bestValue } from '../lib/streaks'
+import { activeHabits, dayNeed, dayParts, globalStreak, habitStreak, isPaused, isScheduled, bestValue } from '../lib/streaks'
 import type { Habit, Routine } from '../lib/types'
-import { DAYS, fmtDuration, humanDate, plural } from '../lib/date'
+import { DAYS, addDays, fmtDuration, humanDate, plural } from '../lib/date'
 import { Icon } from '../ui/kit'
 import { MoodCard } from './MoodCard'
 import type { Overlay } from '../App'
@@ -182,7 +182,13 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
     })
   }
 
-  const showEveningNudge = !paused && hour >= 18 && p.eveningDone === 0 && evening.length > 0
+  const need = dayNeed(state, today)
+  const showEveningNudge = !paused && !g.todayFull && hour >= 18 && need.total > 0
+  const needParts: string[] = []
+  if (need.morning) needParts.push(`${need.morning} ${plural(need.morning, ['ранкова', 'ранкові', 'ранкових'])}`)
+  if (need.evening) needParts.push(`${need.evening} ${plural(need.evening, ['вечірня', 'вечірні', 'вечірніх'])}`)
+  const extra = need.total - need.morning - need.evening
+  if (extra > 0) needParts.push(needParts.length ? `ще ${extra} ${extra === 1 ? 'будь-яка' : 'будь-які'}` : `${extra} ${plural(extra, ['справа', 'справи', 'справ'])}`)
   const order: Routine[] = eveningFirst ? ['evening', 'morning'] : ['morning', 'evening']
 
   if (!all.length) return <Empty onOpen={onOpen} />
@@ -193,6 +199,7 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
         <div>
           <div className="muted">{humanDate(today)}</div>
           <h1>Сьогодні</h1>
+          <button className="link small" onClick={() => onOpen({ type: 'day', key: addDays(today, -1) })}><Icon name="edit" size={14} /> Відмітити вчора</button>
         </div>
         <button className="icon-btn" onClick={() => onOpen({ type: 'settings' })} aria-label="Налаштування"><Icon name="sliders" size={24} color="var(--muted)" /></button>
       </div>
@@ -219,8 +226,8 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
       )}
       {showEveningNudge && (
         <div className="banner evening"><Icon name="bell" size={20} /> <div>
-          <b>{p.morningDone ? 'Ще жодної вечірньої справи' : 'Сьогодні ще нічого не відмічено'}</b>
-          <div className="small">{p.morningDone ? 'Зроби хоча б одну — і день зарахується' : 'Для повного дня — хоча б 1 ранкова і 1 вечірня справа'}</div>
+          <b>{p.morningDone + p.eveningDone ? 'День ще не зараховано' : 'Сьогодні ще нічого не відмічено'}</b>
+          <div className="small">До повного дня ще: {needParts.join(' + ')}</div>
         </div></div>
       )}
       {!paused && g.todayFull && <div className="banner ok"><Icon name="check" size={18} /> <div><b>День зараховано</b><div className="small">Стрік +1</div></div></div>}

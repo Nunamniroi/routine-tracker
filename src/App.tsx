@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { StoreProvider, presetHabits, useStore } from './lib/store'
 import { Icon, Toast } from './ui/kit'
 import { Today } from './screens/Today'
@@ -32,6 +32,22 @@ function Shell() {
   const open = useCallback((o: Overlay) => setStack(s => [...s, o]), [])
   const close = useCallback(() => setStack(s => s.slice(0, -1)), [])
   const closeToast = useCallback(() => setToast(null), [])
+  // кнопка «Назад» на Android закриває верхній екран/шторку, а не застосунок
+  const depth = useRef(0)
+  const ignore = useRef(0)
+  useEffect(() => {
+    while (depth.current < stack.length) { history.pushState({ overlay: depth.current + 1 }, ''); depth.current++ }
+    while (depth.current > stack.length) { ignore.current++; history.back(); depth.current-- }
+  }, [stack.length])
+  useEffect(() => {
+    const onPop = () => {
+      if (ignore.current > 0) { ignore.current--; return }
+      if (depth.current > 0) { depth.current--; setStack(s => s.slice(0, -1)) }
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   const [celebrate, setCelebrate] = useState<{ a: Achievement; more: number } | null>(null)
 
   // нові досягнення: зберігаємо назавжди й вітаємо

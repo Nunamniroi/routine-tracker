@@ -56,7 +56,7 @@ function RoutineStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
           {WD_SHORT.map(w => <div key={w} className="cal-wd">{w}</div>)}
           {Array.from({ length: lead }, (_, i) => <div key={'e' + i} />)}
           {cells.map(c => (
-            <button key={c.key} className={`cal-cell ${c.st}`} disabled={c.st === 'future' || c.st === 'before'}
+            <button key={c.key} className={`cal-cell ${c.st}`} disabled={c.st === 'future'}
               onClick={() => onOpen({ type: 'day', key: c.key })}>{c.d}</button>
           ))}
         </div>

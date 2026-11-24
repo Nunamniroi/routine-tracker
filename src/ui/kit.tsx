@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 
 const P: Record<string, [string, 'f' | 's' | 's3']> = {
   flame: ['M12 2c.8 3.2 4 5.3 5.6 8.4 1.9 3.8-.4 9.6-5.6 9.6s-7.4-4.6-5.8-8.4c.6-1.4 1.6-2.4 2.4-3.1.1 1.6.8 2.8 2 3.3C10.3 8.6 10.8 5 12 2z', 'f'],
@@ -40,6 +40,8 @@ export function Icon({ name, size = 20, color = 'currentColor', className }: { n
 }
 
 export function Sheet({ open, onClose, children, title }: { open: boolean; onClose: () => void; children: ReactNode; title?: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ y0: number; dy: number; active: boolean }>({ y0: 0, dy: 0, active: false })
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -47,13 +49,47 @@ export function Sheet({ open, onClose, children, title }: { open: boolean; onClo
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
   if (!open) return null
+  const el = () => ref.current!
+  const onTouchStart = (e: React.TouchEvent) => {
+    const fromHandle = (e.target as HTMLElement).closest('.sheet-grab')
+    if (!fromHandle && el().scrollTop > 0) return
+    drag.current = { y0: e.touches[0].clientY, dy: 0, active: true }
+    el().style.transition = 'none'
+  }
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (!drag.current.active) return
+    const dy = e.touches[0].clientY - drag.current.y0
+    drag.current.dy = dy
+    if (dy > 0) el().style.transform = `translateY(${dy}px)`
+  }
+  const onTouchEnd = () => {
+    if (!drag.current.active) return
+    drag.current.active = false
+    el().style.transition = 'transform .2s ease-out'
+    if (drag.current.dy > 90) { el().style.transform = 'translateY(100%)'; setTimeout(onClose, 180) }
+    else el().style.transform = ''
+  }
   return (
     <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" onClick={e => e.stopPropagation()} role="dialog">
-        <div className="sheet-handle" />
-        {title && <div className="sheet-title">{title}</div>}
+      <div className="sheet" ref={ref} onClick={e => e.stopPropagation()} role="dialog"
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div className="sheet-grab"><div className="sheet-handle" /></div>
+        <div className="sheet-top">
+          {title ? <div className="sheet-title">{title}</div> : <span />}
+          <button className="icon-btn sm" onClick={onClose} aria-label="Закрити"><Icon name="x" size={20} color="var(--muted)" /></button>
+        </div>
         {children}
       </div>
+    </div>
+  )
+}
+
+export function Stepper({ value, min = 0, max = 99, onChange }: { value: number; min?: number; max?: number; onChange: (v: number) => void }) {
+  return (
+    <div className="stepper">
+      <button onClick={() => onChange(Math.max(min, value - 1))} disabled={value <= min} aria-label="Менше">−</button>
+      <b>{value}</b>
+      <button onClick={() => onChange(Math.min(max, value + 1))} disabled={value >= max} aria-label="Більше">+</button>
     </div>
   )
 }

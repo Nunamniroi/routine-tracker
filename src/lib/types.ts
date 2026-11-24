@@ -56,8 +56,16 @@ export interface Pause {
   reason: string
 }
 
+export interface DayRules {
+  morningMin: number // мінімум ранкових справ
+  eveningMin: number // мінімум вечірніх справ
+  totalMin: number // мінімум справ за день загалом
+  grace: boolean // 1 неповний день не ламає стрік
+}
+
 export interface Settings {
   dayStartHour: number
+  rules?: DayRules
   remindMorning: { on: boolean; time: string }
   remindEvening: { on: boolean; time: string }
 }

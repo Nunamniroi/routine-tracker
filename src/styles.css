@@ -92,7 +92,7 @@ p { margin: 6px 0 12px; }
 .input { background: var(--s2); border: 1px solid transparent; border-radius: 12px; padding: 12px 14px; color: var(--text); font: inherit; width: 100%; outline: none; }
 .input:focus { border-color: var(--border); }
 .input.big { font-size: 22px; font-weight: 600; }
-.input.time { width: 96px; flex: none; padding: 7px 8px; font-size: 14px; font-weight: 600; text-align: center; }
+.input.time { width: 116px; flex: none; padding: 7px 8px; font-size: 14px; font-weight: 600; text-align: center; }
 .input.small-input { width: 90px; text-align: right; padding: 8px 10px; }
 .input.mini-input { width: 92px; padding: 7px 10px; text-align: right; }
 textarea.input { resize: none; }
@@ -118,7 +118,9 @@ textarea.input { resize: none; }
 
 .sheet-wrap { position: fixed; inset: 0; background: rgba(0, 0, 0, .62); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
 .sheet { background: var(--surface); width: 100%; max-width: 520px; border-radius: 28px 28px 0 0; padding: 10px 20px calc(20px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; max-height: 92vh; overflow-y: auto; animation: up .2s ease-out; }
-.sheet-handle { width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto 6px; }
+.sheet-grab { padding: 6px 0 10px; margin: -10px -20px -6px; touch-action: none; }
+.sheet-handle { width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto; }
+.sheet-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sheet-title { font-size: 21px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .sheet-sub { display: flex; align-items: center; gap: 4px; margin-top: -6px; }
 @keyframes up { from { transform: translateY(40px); opacity: .6 } to { transform: none; opacity: 1 } }
@@ -255,3 +257,8 @@ textarea.input { resize: none; }
 .barcol { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; gap: 4px; }
 .barcol .barv { flex: none; }
 .barlbl { text-align: center; font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.stepper { display: flex; align-items: center; gap: 4px; background: var(--s2); border-radius: 12px; padding: 3px; flex: none; }
+.stepper button { width: 34px; height: 32px; border-radius: 9px; font-size: 20px; font-weight: 600; display: grid; place-items: center; }
+.stepper button:active { background: var(--border); }
+.stepper b { min-width: 26px; text-align: center; font-size: 16px; }

@@ -1,4 +1,4 @@
-import type { Abstain, Habit, State } from './types'
+import type { Abstain, DayRules, Habit, State } from './types'
 import { addDays, cmpKey, weekStart } from './date'
 
 // ───────────────────────── базові перевірки ─────────────────────────
@@ -210,6 +210,23 @@ export function firstDay(state: State): string | null {
   return keys[0] ?? null
 }
 
+export const DEFAULT_RULES: DayRules = { morningMin: 1, eveningMin: 1, totalMin: 1, grace: true }
+export function rulesOf(state: State): DayRules { return { ...DEFAULT_RULES, ...state.settings.rules } }
+
+export interface DayNeed { morning: number; evening: number; total: number } // скільки ще бракує
+/** Скільки справ ще бракує до повного дня (з урахуванням того, що заплановано) */
+export function dayNeed(state: State, key: string): DayNeed {
+  const r = rulesOf(state)
+  const p = dayParts(state, key)
+  const mReq = Math.min(r.morningMin, p.morningTotal)
+  const eReq = Math.min(r.eveningMin, p.eveningTotal)
+  const tReq = Math.max(mReq + eReq, Math.min(r.totalMin, p.morningTotal + p.eveningTotal))
+  const m = Math.max(0, mReq - p.morningDone)
+  const e = Math.max(0, eReq - p.eveningDone)
+  const t = Math.max(0, tReq - (p.morningDone + p.eveningDone), m + e)
+  return { morning: m, evening: e, total: t }
+}
+
 export function dayStatus(state: State, key: string, today: string): DayStatus {
   const first = firstDay(state)
   if (!first || cmpKey(key, first) < 0) return 'before'
@@ -217,7 +234,7 @@ export function dayStatus(state: State, key: string, today: string): DayStatus {
   if (isPaused(state, key)) return 'paused'
   const p = dayParts(state, key)
   const anyDone = p.morningDone + p.eveningDone > 0
-  if (p.morning && p.evening && anyDone) return 'full'
+  if (anyDone && dayNeed(state, key).total === 0) return 'full'
   if (key === today) return 'today'
   if (anyDone) return 'partial'
   return 'empty'
@@ -248,7 +265,7 @@ export function globalStreak(state: State, today: string): GlobalStreak {
     if (st === 'full') { count++; partials = 0; continue }
     if (st === 'partial') {
       partials++
-      if (partials >= 2) break
+      if (partials >= 2 || !rulesOf(state).grace) break
       graces++
       continue
     }
@@ -269,7 +286,7 @@ function globalRecord(state: State, today: string): number {
     const st = dayStatus(state, key, today)
     if (st === 'paused' || st === 'today') continue
     if (st === 'full') { run++; partials = 0; best = Math.max(best, run) }
-    else if (st === 'partial') { partials++; if (partials >= 2) { run = 0; partials = 0 } }
+    else if (st === 'partial') { partials++; if (partials >= 2 || !rulesOf(state).grace) { run = 0; partials = 0 } }
     else { run = 0; partials = 0 }
   }
   return best

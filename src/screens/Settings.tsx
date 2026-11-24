@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { useStore, uid, emptyState } from '../lib/store'
-import { activeHabits } from '../lib/streaks'
+import { activeHabits, rulesOf } from '../lib/streaks'
 import { addDays, cmpKey, humanDate, diffDays, plural, DAYS } from '../lib/date'
 import type { Habit, HabitKind, Routine, State, TimerMode } from '../lib/types'
-import { Chips, Icon, Label, Screen, Segmented, Sheet, Switch, parseDuration } from '../ui/kit'
+import { Chips, Icon, Label, Screen, Segmented, Sheet, Stepper, Switch, parseDuration } from '../ui/kit'
 import { fmtDuration } from '../lib/date'
 import type { Overlay } from '../App'
 
@@ -77,6 +77,28 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
           <input className="input time" type="time" value={st.remindEvening.time} onChange={e => set(x => { x.remindEvening.time = e.target.value })} />
           <Switch on={st.remindEvening.on} onChange={v => set(x => { x.remindEvening.on = v })} /></div>
         <div className="note small">Push-сповіщення підключимо наступним кроком. Поки що нагадування видно банером на екрані «Сьогодні» після 18:00.</div>
+      </div>
+
+      <div className="group-title">ПРАВИЛА ПОВНОГО ДНЯ</div>
+      <div className="card list">
+        {(() => {
+          const r = rulesOf(state)
+          const hs = activeHabits(state)
+          const nM = hs.filter(h => h.routine === 'morning').length
+          const nE = hs.filter(h => h.routine === 'evening').length
+          const setR = (patch: Partial<typeof r>) => update(x => { x.settings.rules = { ...rulesOf(x), ...patch } })
+          return <>
+            <div className="list-row"><Icon name="sun" size={18} color="var(--morning)" /><div className="list-main"><div>Ранкових мінімум</div><div className="muted small">з {nM}</div></div>
+              <Stepper value={r.morningMin} max={nM} onChange={v => setR({ morningMin: v })} /></div>
+            <div className="list-row"><Icon name="moon" size={18} color="var(--evening)" /><div className="list-main"><div>Вечірніх мінімум</div><div className="muted small">з {nE}</div></div>
+              <Stepper value={r.eveningMin} max={nE} onChange={v => setR({ eveningMin: v })} /></div>
+            <div className="list-row"><Icon name="check" size={18} color="var(--done)" /><div className="list-main"><div>Усього за день мінімум</div><div className="muted small">будь-яких справ, з {nM + nE}</div></div>
+              <Stepper value={Math.max(r.totalMin, r.morningMin + r.eveningMin)} min={Math.max(1, r.morningMin + r.eveningMin)} max={nM + nE} onChange={v => setR({ totalMin: v })} /></div>
+            <div className="list-row"><Icon name="heart" size={18} color="var(--grace)" /><div className="list-main"><div>Пощада</div><div className="muted small">1 неповний день не ламає стрік, 2 поспіль — ламають</div></div>
+              <Switch on={r.grace} onChange={v => setR({ grace: v })} /></div>
+            <div className="note small">Повний день: ранкових ≥ {r.morningMin}, вечірніх ≥ {r.eveningMin}, усього ≥ {Math.max(r.totalMin, r.morningMin + r.eveningMin)}. Якщо в день заплановано менше справ — вимога зменшується. Зміна правил перерахує й минулі дні.</div>
+          </>
+        })()}
       </div>
 
       <div className="group-title">ДЕНЬ І СТРІКИ</div>
