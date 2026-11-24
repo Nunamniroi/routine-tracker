@@ -272,3 +272,6 @@ textarea.input { resize: none; }
 .bar.goal { height: 8px; border-radius: 4px; margin-top: 8px; }
 .bar.goal .bar-fill { border-radius: 4px; transition: width .4s, background-color .4s; }
 .txt { color: var(--text); font-weight: 600; }
+.note-row { align-items: flex-start; }
+.note-text { white-space: pre-wrap; word-break: break-word; margin-top: 3px; }
+.mood-mini { min-width: 24px; height: 24px; border-radius: 12px; background: var(--fire); color: var(--bg); font-weight: 700; font-size: 13px; display: grid; place-items: center; }

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store'
 import { abstainStats, activeHabits, dayStatus, fmtSpan, spanShort, globalStreak, habitDots, habitStreak, moodEffects, valuesSeries, bestValue } from '../lib/streaks'
-import { DAYS, WD_SHORT, addDays, fmtKey, monthTitle, plural, weekday, dayKey, fmtDuration } from '../lib/date'
+import { DAYS, WD_SHORT, addDays, fmtKey, monthTitle, plural, weekday, dayKey, fmtDuration, humanDate } from '../lib/date'
 import { Icon, Segmented } from '../ui/kit'
 import { fmtValue, streakLabel } from './Today'
 import type { Overlay } from '../App'
@@ -16,7 +16,7 @@ export function Stats({ onOpen }: { onOpen: (o: Overlay) => void }) {
       <Segmented value={tab} onChange={setTab} options={[['routine', 'Рутина'], ['abstain', 'Не роблю'], ['mood', 'Самопочуття']]} />
       {tab === 'routine' && <RoutineStats onOpen={onOpen} />}
       {tab === 'abstain' && <AbstainStatsView />}
-      {tab === 'mood' && <MoodStats />}
+      {tab === 'mood' && <MoodStats onOpen={onOpen} />}
     </div>
   )
 }
@@ -163,8 +163,10 @@ function TriggerList({ a }: { a: { relapses: { trigger?: string }[] } }) {
   return <div className="muted small">Тригери: {e.map(([k, v]) => `${k} ×${v}`).join(', ')}</div>
 }
 
-function MoodStats() {
+function MoodStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
   const { state, today, now } = useStore()
+  const [showAll, setShowAll] = useState(false)
+  const notes = Object.entries(state.days).filter(([, l]) => l.note?.trim()).sort((a, b) => (a[0] < b[0] ? 1 : -1))
   const d = new Date(now)
   const first = fmtKey(new Date(d.getFullYear(), d.getMonth(), 1, 12))
   const n = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
@@ -188,6 +190,18 @@ function MoodStats() {
           </svg>
         ) : <div className="muted small pad">Оцінюй день на екрані «Сьогодні» — тут зʼявиться графік.</div>}
       </div>
+      <div className="row-between sub-head"><b>Нотатки</b><span className="muted small">{notes.length ? notes.length : ''}</span></div>
+      {notes.length ? <div className="card list">
+        {(showAll ? notes : notes.slice(0, 10)).map(([k, l]) => (
+          <button className="list-row note-row" key={k} onClick={() => onOpen({ type: 'day', key: k })}>
+            <div className="list-main">
+              <div className="row-between small"><span className="muted">{humanDate(k)}</span>{l.mood ? <span className="mood-mini">{l.mood}</span> : null}</div>
+              <div className="note-text">{l.note}</div>
+            </div>
+          </button>
+        ))}
+        {!showAll && notes.length > 10 && <button className="link small" onClick={() => setShowAll(true)}>Показати всі ({notes.length})</button>}
+      </div> : <div className="muted small pad">Нотатки з картки «Як день?» зʼявляться тут.</div>}
       <div className="row-between sub-head"><b>Що впливає</b><span className="muted small">середнє: з / без</span></div>
       {effects.length ? effects.map(e => (
         <div className="card row-between" key={e.habit.id}>
