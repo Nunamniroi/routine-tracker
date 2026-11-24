@@ -5,6 +5,7 @@ import { DAYS, WD_SHORT, addDays, fmtKey, monthTitle, plural, weekday, dayKey, f
 import { Icon, Segmented } from '../ui/kit'
 import { fmtValue, streakLabel } from './Today'
 import type { Overlay } from '../App'
+import { moodColor } from '../ui/colors'
 
 type Tab = 'routine' | 'abstain' | 'mood'
 
@@ -186,7 +187,7 @@ function MoodStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
           <svg viewBox={`0 0 ${W} ${H}`} className="mood-chart">
             {[1, 3, 5].map(v => <line key={v} x1="0" x2={W} y1={y(v)} y2={y(v)} stroke="var(--s2)" />)}
             <path d={pts.map((p, k) => `${k ? 'L' : 'M'}${x(p.i)} ${y(p.v)}`).join('')} fill="none" stroke="var(--fire)" strokeWidth="2" strokeLinejoin="round" />
-            {pts.map(p => <circle key={p.i} cx={x(p.i)} cy={y(p.v)} r="3" fill="var(--fire)" />)}
+            {pts.map(p => <circle key={p.i} cx={x(p.i)} cy={y(p.v)} r="4" fill={moodColor(p.v)} />)}
           </svg>
         ) : <div className="muted small pad">Оцінюй день на екрані «Сьогодні» — тут зʼявиться графік.</div>}
       </div>
@@ -195,7 +196,7 @@ function MoodStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
         {(showAll ? notes : notes.slice(0, 10)).map(([k, l]) => (
           <button className="list-row note-row" key={k} onClick={() => onOpen({ type: 'day', key: k })}>
             <div className="list-main">
-              <div className="row-between small"><span className="muted">{humanDate(k)}</span>{l.mood ? <span className="mood-mini">{l.mood}</span> : null}</div>
+              <div className="row-between small"><span className="muted">{humanDate(k)}</span>{l.mood ? <span className="mood-mini" style={{ background: moodColor(l.mood) }}>{l.mood}</span> : null}</div>
               <div className="note-text">{l.note}</div>
             </div>
           </button>

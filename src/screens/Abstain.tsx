@@ -10,18 +10,11 @@ import { justDragged, markDragEnd } from '../ui/dragGuard'
 import type { Abstain as A } from '../lib/types'
 import { Chips, Icon, Label, Screen, Segmented, Sheet } from '../ui/kit'
 import type { Overlay } from '../App'
+import { progressColor } from '../ui/colors'
 import { DAY_MILESTONES, titleOf } from '../lib/achievements'
 
 const UNDO_MS = 10 * 60 * 1000
 const DAY_MS = 86400000
-
-// червоний → жовтий → зелений (кольори теми: --reset, --grace, --done)
-const C_RED = [240, 82, 90], C_YEL = [245, 197, 66], C_GRN = [61, 220, 132]
-export function progressColor(p: number) {
-  const t = Math.max(0, Math.min(1, p))
-  const [a, b, k] = t < 0.5 ? [C_RED, C_YEL, t / 0.5] : [C_YEL, C_GRN, (t - 0.5) / 0.5]
-  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`
-}
 
 function leftText(ms: number) {
   const m = Math.max(0, Math.ceil(ms / 60000))

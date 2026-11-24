@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Icon } from '../ui/kit'
+import { moodColor } from '../ui/colors'
 import { useStore } from '../lib/store'
 
 export function MoodCard({ dateKey, draft, onDraft }: {
@@ -32,7 +33,7 @@ export function MoodCard({ dateKey, draft, onDraft }: {
       </div>
       <div className="mood-row">
         {[1, 2, 3, 4, 5].map(i => (
-          <button key={i} className={'mood-dot' + (mood === i ? ' on' : '')} onClick={() => setMood(mood === i ? undefined : i)}>{i}</button>
+          <button key={i} className={'mood-dot' + (mood === i ? ' on' : '')} style={mood === i ? { background: moodColor(i) } : undefined} onClick={() => setMood(mood === i ? undefined : i)}>{i}</button>
         ))}
       </div>
       {noteOpen
