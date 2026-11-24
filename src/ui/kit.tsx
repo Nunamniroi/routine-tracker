@@ -39,40 +39,112 @@ export function Icon({ name, size = 20, color = 'currentColor', className }: { n
   )
 }
 
+let scrollLocks = 0
+let savedY = 0
+function lockScroll() {
+  if (scrollLocks++ === 0) {
+    savedY = window.scrollY
+    const b = document.body.style
+    b.position = 'fixed'; b.top = `-${savedY}px`; b.left = '0'; b.right = '0'
+  }
+  return () => {
+    if (--scrollLocks === 0) {
+      const b = document.body.style
+      b.position = ''; b.top = ''; b.left = ''; b.right = ''
+      window.scrollTo(0, savedY)
+    }
+  }
+}
+
 export function Sheet({ open, onClose, children, title }: { open: boolean; onClose: () => void; children: ReactNode; title?: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ y0: number; dy: number; active: boolean }>({ y0: 0, dy: 0, active: false })
+  const wrap = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && closeRef.current()
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    const unlock = lockScroll()
+    return () => { window.removeEventListener('keydown', onKey); unlock() }
+  }, [open])
+
+  // Свайп вниз: нативні слухачі (passive: false), щоб блокувати прокрутку фону
+  useEffect(() => {
+    if (!open) return
+    const sheet = ref.current, bg = wrap.current
+    if (!sheet || !bg) return
+    let y0 = 0, x0 = 0, dy = 0, pDy = 0, pT = 0, v = 0, mode: 'idle' | 'drag' | 'scroll' = 'idle', fromHandle = false, raf = 0, closing = false
+    const apply = () => {
+      raf = 0
+      sheet.style.transform = `translateY(${dy}px)`
+      bg.style.backgroundColor = `rgba(0,0,0,${0.62 * Math.max(0, 1 - dy / (sheet.offsetHeight || 1))})`
+    }
+    const start = (e: TouchEvent) => {
+      if (closing) return
+      y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; dy = 0
+      fromHandle = !!(e.target as HTMLElement).closest('.sheet-grab, .sheet-top')
+      mode = 'idle'
+    }
+    const move = (e: TouchEvent) => {
+      if (closing) { e.preventDefault(); return }
+      const d = e.touches[0].clientY - y0
+      if (mode === 'idle') {
+        if (Math.abs(d) < 6 && Math.abs(e.touches[0].clientX - x0) < 6) return
+        const atTop = sheet.scrollTop <= 0
+        if (d > 0 && (fromHandle || atTop)) {
+          mode = 'drag'; y0 = e.touches[0].clientY; pDy = 0; pT = performance.now(); v = -1
+          sheet.style.transition = 'none'; sheet.style.animation = 'none'; bg.style.transition = 'none'
+        } else mode = 'scroll'
+      }
+      if (mode === 'drag') {
+        e.preventDefault()
+        dy = Math.max(0, e.touches[0].clientY - y0)
+        const now = performance.now()
+        if (now - pT > 0) { const inst = (dy - pDy) / (now - pT); v = v < 0 ? inst : 0.5 * v + 0.5 * inst }
+        pDy = dy; pT = now
+        if (!raf) raf = requestAnimationFrame(apply)
+      }
+    }
+    const end = () => {
+      if (mode !== 'drag') { mode = 'idle'; return }
+      mode = 'idle'
+      if (raf) { cancelAnimationFrame(raf); raf = 0 }
+      const h = sheet.offsetHeight || 400
+      sheet.style.transition = 'transform .22s cubic-bezier(.2,.8,.3,1)'
+      bg.style.transition = 'background-color .22s'
+      if (dy > Math.min(120, h * 0.3) || (v > 0.5 && dy > 25)) {
+        closing = true
+        sheet.style.transform = 'translateY(100%)'
+        bg.style.backgroundColor = 'rgba(0,0,0,0)'
+        setTimeout(() => closeRef.current(), 200)
+      } else {
+        sheet.style.transform = ''
+        bg.style.backgroundColor = ''
+      }
+    }
+    // фон: не даємо прокручувати сторінку під шторкою
+    const bgMove = (e: TouchEvent) => { if (!sheet.contains(e.target as Node)) e.preventDefault() }
+    sheet.addEventListener('touchstart', start, { passive: true })
+    sheet.addEventListener('touchmove', move, { passive: false })
+    sheet.addEventListener('touchend', end)
+    sheet.addEventListener('touchcancel', end)
+    bg.addEventListener('touchmove', bgMove, { passive: false })
+    return () => {
+      sheet.removeEventListener('touchstart', start)
+      sheet.removeEventListener('touchmove', move)
+      sheet.removeEventListener('touchend', end)
+      sheet.removeEventListener('touchcancel', end)
+      bg.removeEventListener('touchmove', bgMove)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [open])
+
   if (!open) return null
-  const el = () => ref.current!
-  const onTouchStart = (e: React.TouchEvent) => {
-    const fromHandle = (e.target as HTMLElement).closest('.sheet-grab')
-    if (!fromHandle && el().scrollTop > 0) return
-    drag.current = { y0: e.touches[0].clientY, dy: 0, active: true }
-    el().style.transition = 'none'
-  }
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!drag.current.active) return
-    const dy = e.touches[0].clientY - drag.current.y0
-    drag.current.dy = dy
-    if (dy > 0) el().style.transform = `translateY(${dy}px)`
-  }
-  const onTouchEnd = () => {
-    if (!drag.current.active) return
-    drag.current.active = false
-    el().style.transition = 'transform .2s ease-out'
-    if (drag.current.dy > 90) { el().style.transform = 'translateY(100%)'; setTimeout(onClose, 180) }
-    else el().style.transform = ''
-  }
   return (
-    <div className="sheet-wrap" onClick={onClose}>
-      <div className="sheet" ref={ref} onClick={e => e.stopPropagation()} role="dialog"
-        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+    <div className="sheet-wrap" ref={wrap} onClick={onClose}>
+      <div className="sheet" ref={ref} onClick={e => e.stopPropagation()} role="dialog">
         <div className="sheet-grab"><div className="sheet-handle" /></div>
         <div className="sheet-top">
           {title ? <div className="sheet-title">{title}</div> : <span />}

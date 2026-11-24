@@ -116,14 +116,14 @@ textarea.input { resize: none; }
 .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; color: var(--muted); font-weight: 500; }
 .tab.on { color: var(--text); font-weight: 600; }
 
-.sheet-wrap { position: fixed; inset: 0; background: rgba(0, 0, 0, .62); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
-.sheet { background: var(--surface); width: 100%; max-width: 520px; border-radius: 28px 28px 0 0; padding: 10px 20px calc(20px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; max-height: 92vh; overflow-y: auto; animation: up .2s ease-out; }
+.sheet-wrap { position: fixed; inset: 0; overscroll-behavior: contain; touch-action: none; background: rgba(0, 0, 0, .62); z-index: 100; display: flex; align-items: flex-end; justify-content: center; animation: fade .15s; }
+.sheet { background: var(--surface); width: 100%; max-width: 520px; border-radius: 28px 28px 0 0; padding: 10px 20px calc(20px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; max-height: 92vh; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; will-change: transform; animation: up .22s cubic-bezier(.2,.8,.3,1); }
 .sheet-grab { padding: 6px 0 10px; margin: -10px -20px -6px; touch-action: none; }
 .sheet-handle { width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 0 auto; }
 .sheet-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .sheet-title { font-size: 21px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 .sheet-sub { display: flex; align-items: center; gap: 4px; margin-top: -6px; }
-@keyframes up { from { transform: translateY(40px); opacity: .6 } to { transform: none; opacity: 1 } }
+@keyframes up { from { transform: translateY(100%) } to { transform: none } }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 
 .screen-overlay, .timer { position: fixed; inset: 0; background: var(--bg); overflow-y: auto; max-width: 520px; margin: 0 auto; }
@@ -262,3 +262,4 @@ textarea.input { resize: none; }
 .stepper button { width: 34px; height: 32px; border-radius: 9px; font-size: 20px; font-weight: 600; display: grid; place-items: center; }
 .stepper button:active { background: var(--border); }
 .stepper b { min-width: 26px; text-align: center; font-size: 16px; }
+
