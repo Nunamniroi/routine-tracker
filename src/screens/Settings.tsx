@@ -100,6 +100,13 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
         })()}
       </div>
 
+      <div className="group-title">ВИГЛЯД</div>
+      <div className="card">
+        <Segmented value={st.theme ?? 'auto'} onChange={(v: 'auto' | 'light' | 'color' | 'dark') => set(x => { x.theme = v })}
+          options={[['auto', 'Авто'], ['light', 'Ранок'], ['color', 'День'], ['dark', 'Ніч']]} />
+        <div className="muted small">Авто: 04–11 світла, 11–17 кольорова, 17–04 темна.</div>
+      </div>
+
       <div className="group-title">ДЕНЬ І СТРІКИ</div>
       <div className="card list">
         <div className="list-row"><Icon name="moon" size={18} color="var(--muted)" /><div className="list-main"><div>Новий день починається</div><div className="muted small">справи до цього часу — у вчора</div></div>

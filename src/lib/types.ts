@@ -68,6 +68,7 @@ export interface Settings {
   rules?: DayRules
   remindMorning: { on: boolean; time: string }
   remindEvening: { on: boolean; time: string }
+  theme?: 'auto' | 'light' | 'color' | 'dark'
 }
 
 export interface State {

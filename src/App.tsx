@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { StoreProvider, parseBackup, presetHabits, useStore } from './lib/store'
 import { Icon, Toast } from './ui/kit'
-import { applySky } from './ui/sky'
+import { applyTheme } from './ui/theme'
 import { Today } from './screens/Today'
 import { ValueSheet } from './screens/ValueSheet'
 import { Timer } from './screens/Timer'
@@ -28,7 +28,7 @@ type Tab = 'today' | 'abstain' | 'ach' | 'stats'
 function Shell() {
   const { loaded, state, today, now, update, replaceState } = useStore()
   const restoreRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { applySky(new Date(now)) }, [now])
+  useEffect(() => { applyTheme(state.settings.theme, new Date(now)) }, [now, state.settings.theme])
   const [tab, setTab] = useState<Tab>('today')
   const [stack, setStack] = useState<Overlay[]>([])
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null)
@@ -93,7 +93,7 @@ function Shell() {
 
   return (
     <div className="app">
-      <div className="sky" aria-hidden="true" />
+      <div className="doodle" aria-hidden="true" />
       <main className="main">
         {tab === 'today' && <Today onOpen={open} />}
         {tab === 'abstain' && <AbstainScreen onOpen={open} />}
