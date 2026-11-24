@@ -6,7 +6,8 @@ import type { Habit, HabitKind, Routine, State, TimerMode } from '../lib/types'
 import { Chips, Icon, Label, Screen, Segmented, Sheet, Stepper, Switch, parseDuration } from '../ui/kit'
 import { fmtDuration } from '../lib/date'
 import type { Overlay } from '../App'
-import { THEME_NAMES } from '../ui/theme'
+import { THEME_NAMES, themeBounds } from '../ui/theme'
+import { KYIV } from '../ui/sun'
 
 function download(name: string, data: string, type: string) {
   const blob = new Blob([data], { type })
@@ -105,7 +106,24 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
       <div className="card">
         <Chips options={THEME_NAMES.map(x => x[1])} value={(THEME_NAMES.find(x => x[0] === (st.theme ?? 'auto')) ?? THEME_NAMES[0])[1]}
           onChange={(v: string | null) => { const m = THEME_NAMES.find(x => x[1] === v)?.[0] ?? 'auto'; set(x => { x.theme = m as NonNullable<typeof x.theme> }) }} />
-        <div className="muted small">Авто: ранок 04–10 · день 10–13 · обід 13–17 · вечір 17–21 · ніч 21–04</div>
+        {(() => {
+          const b = themeBounds(new Date(), st.place ?? KYIV)
+          const t = (x: number | Date) => new Date(x).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })
+          return <div className="muted small">
+            Сьогодні: схід {t(b.sunrise)}, захід {t(b.sunset)}.<br />
+            Авто: ранок {t(b.morningFrom)} · день {t(b.dayFrom)} · обід {t(b.noonFrom)} · вечір {t(b.eveningFrom)} · ніч {t(b.nightFrom)}
+          </div>
+        })()}
+        <div className="row-between small">
+          <span className="muted">Місце: {(st.place ?? KYIV).name}</span>
+          <button className="link small" onClick={() => {
+            if (!navigator.geolocation) return alert('Телефон не дає визначити місце')
+            navigator.geolocation.getCurrentPosition(
+              pos => set(x => { x.place = { lat: Math.round(pos.coords.latitude * 100) / 100, lon: Math.round(pos.coords.longitude * 100) / 100, name: 'моє місце (GPS)' } }),
+              () => alert('Не вдалося визначити місце — лишаю Київ'),
+              { timeout: 15000, maximumAge: 7 * 86400000 })
+          }}>Визначити за GPS</button>
+        </div>
       </div>
 
       <div className="group-title">ДЕНЬ І СТРІКИ</div>

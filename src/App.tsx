@@ -28,7 +28,7 @@ type Tab = 'today' | 'abstain' | 'ach' | 'stats'
 function Shell() {
   const { loaded, state, today, now, update, replaceState } = useStore()
   const restoreRef = useRef<HTMLInputElement>(null)
-  useEffect(() => { applyTheme(state.settings.theme, new Date(now)) }, [now, state.settings.theme])
+  useEffect(() => { applyTheme(state.settings.theme, new Date(now), state.settings.place) }, [now, state.settings.theme, state.settings.place])
   const [tab, setTab] = useState<Tab>('today')
   const [stack, setStack] = useState<Overlay[]>([])
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null)

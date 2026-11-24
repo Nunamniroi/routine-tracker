@@ -69,6 +69,7 @@ export interface Settings {
   remindMorning: { on: boolean; time: string }
   remindEvening: { on: boolean; time: string }
   theme?: 'auto' | 'morning' | 'day' | 'noon' | 'evening' | 'night'
+  place?: { lat: number; lon: number; name: string } // для сходу/заходу сонця
 }
 
 export interface State {
