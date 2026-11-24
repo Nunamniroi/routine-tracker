@@ -25,6 +25,11 @@ function useTick() {
 }
 
 const p2 = (n: number) => String(n).padStart(2, '0')
+const WD = ['нд', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб']
+function startText(ts: number) {
+  const d = new Date(ts)
+  return `${WD[d.getDay()]}, ${humanDate(dayKey(ts, 0), false)} ${d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() + ' ' : ''}· ${p2(d.getHours())}:${p2(d.getMinutes())}`
+}
 function clock(ms: number) {
   const s = Math.max(0, Math.floor(ms / 1000)) % 86400
   return `${p2(Math.floor(s / 3600))}:${p2(Math.floor((s % 3600) / 60))}:${p2(s % 60)}`
@@ -54,9 +59,9 @@ export function AbstainScreen({ onOpen }: { onOpen: (o: Overlay) => void }) {
         const canUndo = now - lastLogged < UNDO_MS
         return (
           <div className="card abst" key={a.id}>
-            <div className="row-between">
+            <div>
               <button className="link-title" onClick={() => onOpen({ type: 'abstainEdit', id: a.id })}>{a.name}</button>
-              <span className="muted small">з {humanDate(dayKey(st.lastStart, 0), false)}</span>
+              <div className="muted small">{a.relapses.length ? 'Після зриву' : 'Початок'}: {startText(st.lastStart)}</div>
             </div>
             <div className="row-between">
               <div className="abst-num">
