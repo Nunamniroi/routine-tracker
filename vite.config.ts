@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  base: process.env.BASE ?? '/',
   plugins: [
     react(),
     VitePWA({
@@ -13,7 +14,8 @@ export default defineConfig({
         short_name: 'Рутина',
         description: 'Стріки з пощадою, таймер для практик, «не роблю» і статистика',
         lang: 'uk',
-        start_url: '/',
+        start_url: '.',
+        scope: '.',
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#0E0F12',
@@ -24,7 +26,7 @@ export default defineConfig({
           { src: 'icon-512-maskable.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'], navigateFallback: '/index.html' },
+      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,svg}'], navigateFallback: 'index.html' },
     }),
   ],
   test: { environment: 'node' },
