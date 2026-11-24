@@ -297,7 +297,10 @@ function globalRecord(state: State, today: string): number {
 export interface AbstainStats {
   currentMs: number
   recordMs: number
+  /** поточна серія побила попередній рекорд, і той рекорд був хоча б добу (щоб не святкувати «рекорд» у 5 хвилин) */
   isRecord: boolean
+  /** найдовша завершена серія (до зриву) */
+  prevBestMs: number
   relapsesThisMonth: number
   relapsesPrevMonth: number
   avgSeriesMs: number | null
@@ -312,13 +315,15 @@ export function abstainStats(a: Abstain, now: number): AbstainStats {
   const lastStart = bounds[bounds.length - 1]
   const currentMs = now - lastStart
   const recordMs = Math.max(currentMs, ...series, 0)
+  const prevBest = Math.max(0, ...series)
   const d = new Date(now)
   const mStart = new Date(d.getFullYear(), d.getMonth(), 1).getTime()
   const pStart = new Date(d.getFullYear(), d.getMonth() - 1, 1).getTime()
   return {
     currentMs,
     recordMs,
-    isRecord: currentMs >= recordMs && currentMs > 0,
+    isRecord: rel.length > 0 && currentMs >= prevBest && prevBest >= 86400000,
+    prevBestMs: prevBest,
     relapsesThisMonth: rel.filter(t => t >= mStart).length,
     relapsesPrevMonth: rel.filter(t => t >= pStart && t < mStart).length,
     avgSeriesMs: series.length ? series.reduce((s, x) => s + x, 0) / series.length : null,

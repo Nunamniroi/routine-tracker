@@ -88,13 +88,15 @@ function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overla
           </div>
           <button className="btn-outline danger" onPointerDown={stop} onClick={e => { stop(e); onOpen({ type: 'relapse', id: a.id }) }}>Зірвався</button>
         </div>
-        <div className="bar"><div className={'bar-fill' + (st.isRecord ? ' fire' : '')} style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>
+        <div className="bar"><div className={'bar-fill' + (st.isRecord || !a.relapses.length ? ' fire' : '')} style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>
         <div className="row-between small">
           {!a.relapses.length
             ? <><span className="muted">Жодного зриву</span><span /></>
             : st.isRecord
             ? <><span className="fire b">Новий рекорд</span><span className="fire">100%</span></>
-            : <><span className="muted">Рекорд — {spanShort(st.recordMs)}</span>{st.recordMs >= 86400000 && <span className="muted">{Math.round(pct * 100)}% до рекорду</span>}</>}
+            : st.prevBestMs < 86400000
+            ? <><span className="muted">Минула серія — {spanShort(st.prevBestMs)}</span><span /></>
+            : <><span className="muted">Рекорд — {spanShort(st.recordMs)}</span><span className="muted">{Math.round(pct * 100)}% до рекорду</span></>}
         </div>
         {canUndo && a.relapses.length > 0 && (
           <button className="link small" onPointerDown={stop} onClick={e => { stop(e); undo() }}><Icon name="undo" size={14} /> Скасувати останній зрив</button>
