@@ -70,7 +70,7 @@ export function tracks(state: State, today: string, now: number): Track[] {
   return out
 }
 
-/** Усі ачівки, які зараз заслужені за рекордом (тобто вже назавжди) */
+/** Усі досягнення, які зараз заслужені за рекордом (тобто вже назавжди) */
 export function earnedNow(state: State, today: string, now: number): Achievement[] {
   const out: Achievement[] = []
   for (const t of tracks(state, today, now)) {

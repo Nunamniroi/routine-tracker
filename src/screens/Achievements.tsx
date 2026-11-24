@@ -44,7 +44,7 @@ function TrackCard({ t, earned }: { t: Track; earned: Record<string, number> }) 
             <span className="muted">до «{titleOf(next, t.unit)}» ще {next - t.current} {unitWord(next - t.current, t.unit)}</span>
           </div>
         </>
-      ) : <div className="fire small b">Усі ачівки зібрано 🔥</div>}
+      ) : <div className="fire small b">Усі досягнення здобуто 🔥</div>}
     </div>
   )
 }
@@ -72,9 +72,9 @@ export function AchievementsScreen() {
 
   return (
     <div className="page">
-      <h1>Ачівки</h1>
+      <h1>Досягнення</h1>
       <div className="card row-between">
-        <div><div className="muted small">Зібрано</div><div className="big-num sm">{got}<span className="muted small"> / {total}</span></div></div>
+        <div><div className="muted small">Здобуто</div><div className="big-num sm">{got}<span className="muted small"> / {total}</span></div></div>
         <Icon name="trophy" size={40} color="var(--grace)" />
       </div>
       {recent.length > 0 && <>
@@ -99,11 +99,11 @@ export function Celebration({ a, more, onClose }: { a: Achievement; more: number
   return (
     <div className="celebrate" onClick={onClose}>
       <div className="celebrate-card" onClick={e => e.stopPropagation()}>
-        <div className="muted small b">НОВА АЧІВКА</div>
+        <div className="muted small b">НОВЕ ДОСЯГНЕННЯ</div>
         <div className="celebrate-medal"><Badge n={a.n} unit={a.unit} tier={a.tier} size={120} /></div>
         <h2>{a.title}</h2>
         <p className="muted center">{a.scope === 'global' ? 'Загальний стрік' : a.name} — {a.n} {unitWord(a.n, a.unit)}{a.scope === 'abst' ? ' без зриву' : ' поспіль'}</p>
-        {more > 0 && <p className="muted small center">і ще {more} {plural(more, ['ачівка', 'ачівки', 'ачівок'])}</p>}
+        {more > 0 && <p className="muted small center">і ще {more} {plural(more, ['досягнення', 'досягнення', 'досягнень'])}</p>}
         <button className="btn primary" onClick={onClose}>Круто 🔥</button>
       </div>
     </div>

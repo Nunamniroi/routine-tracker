@@ -15,7 +15,7 @@ function st(): State {
   }
 }
 
-describe('ачівки', () => {
+describe('досягнення', () => {
   it('7 днів поспіль → 1, 3, 5, 7 для справи і загального стріку', () => {
     const s = st()
     for (let i = 1; i <= 7; i++) s.days[addDays(T, -i)] = { entries: { m: { done: true }, e: { done: true } } }

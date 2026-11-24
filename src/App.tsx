@@ -33,7 +33,7 @@ function Shell() {
   const closeToast = useCallback(() => setToast(null), [])
   const [celebrate, setCelebrate] = useState<{ a: Achievement; more: number } | null>(null)
 
-  // нові ачівки: зберігаємо назавжди й вітаємо
+  // нові досягнення: зберігаємо назавжди й вітаємо
   useEffect(() => {
     if (!loaded || !state.onboarded) return
     const known = state.achievements ?? {}
@@ -75,7 +75,7 @@ function Shell() {
         {tab === 'stats' && <Stats onOpen={open} />}
       </main>
       <nav className="tabbar">
-        {([['today', 'Сьогодні', 'today'], ['abstain', 'Не роблю', 'ban'], ['ach', 'Ачівки', 'trophy'], ['stats', 'Статистика', 'stats']] as const).map(([k, l, ic]) => (
+        {([['today', 'Сьогодні', 'today'], ['abstain', 'Не роблю', 'ban'], ['ach', 'Досягнення', 'trophy'], ['stats', 'Статистика', 'stats']] as const).map(([k, l, ic]) => (
           <button key={k} className={'tab' + (tab === k ? ' on' : '')} onClick={() => { setTab(k); setStack([]) }}>
             <Icon name={ic} size={22} color={tab === k ? 'var(--fire)' : 'var(--muted)'} />
             <span>{l}</span>
