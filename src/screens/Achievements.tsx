@@ -5,6 +5,8 @@ import { DAYS, plural } from '../lib/date'
 import { Icon, Segmented } from '../ui/kit'
 
 const WEEKS: [string, string, string] = ['тиждень', 'тижні', 'тижнів']
+/** родовий відмінок після «до»: до 21 дня, до 30 днів */
+const genWord = (n: number, unit: 'days' | 'weeks') => (n % 10 === 1 && n % 100 !== 11) ? (unit === 'weeks' ? 'тижня' : 'дня') : (unit === 'weeks' ? 'тижнів' : 'днів')
 export const unitWord = (n: number, unit: 'days' | 'weeks') => plural(n, unit === 'weeks' ? WEEKS : DAYS)
 
 export function Badge({ n, unit, tier, locked, size = 64 }: { n: number; unit: 'days' | 'weeks'; tier: Tier; locked?: boolean; size?: number }) {
@@ -33,7 +35,7 @@ function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string
         <div className="ach-head-main">
           <div className="ach-name">{t.name}</div>
           <div className="muted small">
-            {next ? <>до {next} {unitWord(next, t.unit)} — ще {next - t.current}</> : 'усе здобуто 🔥'}
+            {next ? <>до {next} {genWord(next, t.unit)} — ще {next - t.current}</> : 'усе здобуто 🔥'}
           </div>
           {next && <div className="bar thin"><div className="bar-fill fire" style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>}
         </div>
@@ -54,7 +56,7 @@ function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string
   )
 }
 
-type Tab = 'global' | 'habit' | 'abst'
+type Tab = 'habit' | 'abst'
 
 export function AchievementsScreen() {
   const { state, today, now } = useStore()
@@ -67,6 +69,7 @@ export function AchievementsScreen() {
     .map(([id]) => { const [scope, refId, n] = id.split(':'); const t = ts.find(x => x.scope === scope && x.refId === refId); return t ? { t, n: Number(n) } : null })
     .find(Boolean)
   const list = ts.filter(t => t.scope === tab)
+  const globalTrack = ts.find(t => t.scope === 'global')
 
   return (
     <div className="page">
@@ -79,9 +82,10 @@ export function AchievementsScreen() {
         </div>
         <Icon name="trophy" size={40} color="var(--grace)" />
       </div>
-      <Segmented value={tab} onChange={setTab} options={[['habit', 'Справи'], ['abst', 'Не роблю'], ['global', 'Загальний']]} />
+      {globalTrack && <TrackCard t={globalTrack} earned={earned} />}
+      <Segmented value={tab} onChange={setTab} options={[['habit', 'Справи'], ['abst', 'Не роблю']]} />
       {list.length
-        ? list.map(t => <TrackCard key={t.scope + t.refId} t={t} earned={earned} defaultOpen={tab === 'global'} />)
+        ? list.map(t => <TrackCard key={t.scope + t.refId} t={t} earned={earned} />)
         : <div className="muted center pad">Тут поки порожньо.</div>}
     </div>
   )
