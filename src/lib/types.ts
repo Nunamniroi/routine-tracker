@@ -70,4 +70,5 @@ export interface State {
   pauses: Pause[]
   settings: Settings
   onboarded: boolean
+  achievements?: Record<string, number> // id → коли отримано (ms)
 }

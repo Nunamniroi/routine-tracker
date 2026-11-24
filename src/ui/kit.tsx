@@ -25,6 +25,7 @@ const P: Record<string, [string, 'f' | 's' | 's3']> = {
   edit: ['M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4', 's'],
   play: ['M8 5.5v13l11-6.5z', 'f'],
   trash: ['M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13', 's'],
+  trophy: ['M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3', 's'],
 }
 
 export function Icon({ name, size = 20, color = 'currentColor', className }: { name: string; size?: number; color?: string; className?: string }) {
