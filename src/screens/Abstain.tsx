@@ -1,9 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useStore, uid } from '../lib/store'
 import { abstainStats, fmtSpan } from '../lib/streaks'
-import { DAYS, plural, humanDate, dayKey } from '../lib/date'
+import { DAYS, plural, humanDate, dayKey, monthTitle, WD_SHORT } from '../lib/date'
+import { QUOTES } from '../lib/quotes'
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { justDragged, markDragEnd } from '../ui/dragGuard'
 import type { Abstain as A } from '../lib/types'
-import { Chips, Icon, Label, Segmented, Sheet } from '../ui/kit'
+import { Chips, Icon, Label, Screen, Segmented, Sheet } from '../ui/kit'
 import type { Overlay } from '../App'
 
 const UNDO_MS = 10 * 60 * 1000
@@ -35,60 +40,205 @@ function clock(ms: number) {
   return `${p2(Math.floor(s / 3600))}:${p2(Math.floor((s % 3600) / 60))}:${p2(s % 60)}`
 }
 
+function QuoteRotator() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * QUOTES.length))
+  const [shown, setShown] = useState(true)
+  const next = () => { setShown(false); setTimeout(() => { setI(x => (x + 1) % QUOTES.length); setShown(true) }, 350) }
+  useEffect(() => { const t = setInterval(next, 30000); return () => clearInterval(t) }, [])
+  const [text, src] = QUOTES[i]
+  return (
+    <button className={'quote' + (shown ? ' on' : '')} onClick={next}>
+      <span className="quote-text">«{text}»</span>
+      <span className="quote-src">— {src}</span>
+    </button>
+  )
+}
+
+function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overlay) => void }) {
+  const { update } = useStore()
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: a.id })
+  const st = abstainStats(a, now)
+  const cur = spanText(st.currentMs)
+  const rec = fmtSpan(st.recordMs).days
+  const pct = st.recordMs ? Math.min(1, st.currentMs / st.recordMs) : 1
+  const lastLogged = Math.max(0, ...a.relapses.map(r => r.loggedAt))
+  const canUndo = now - lastLogged < UNDO_MS
+  const undo = () => update(s => {
+    const x = s.abstains.find(y => y.id === a.id)!
+    x.relapses = x.relapses.filter(r => r.loggedAt !== lastLogged)
+  })
+  const stop = (e: React.SyntheticEvent) => e.stopPropagation()
+  return (
+    <div ref={setNodeRef} className="sortable" {...attributes} {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}>
+      <div className="card abst" onClick={() => { if (!justDragged()) onOpen({ type: 'abstain', id: a.id }) }}>
+        <div className="row-between">
+          <div>
+            <div className="link-title">{a.name}</div>
+            <div className="muted small">{a.relapses.length ? 'Після зриву' : 'Початок'}: {startText(st.lastStart)}</div>
+          </div>
+          <Icon name="chevr" size={20} color="var(--muted)" />
+        </div>
+        <div className="row-between">
+          <div className="abst-num">
+            <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
+            <span className="abst-side">
+              <span className="muted">{cur.unit}</span>
+              <span className="clock">{clock(st.currentMs)}</span>
+            </span>
+          </div>
+          <button className="btn-outline danger" onPointerDown={stop} onClick={e => { stop(e); onOpen({ type: 'relapse', id: a.id }) }}>Зірвався</button>
+        </div>
+        <div className="bar"><div className={'bar-fill' + (st.isRecord ? ' fire' : '')} style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>
+        <div className="row-between small">
+          {!a.relapses.length
+            ? <><span className="muted">Жодного зриву</span><span /></>
+            : st.isRecord
+            ? <><span className="fire b">Новий рекорд</span><span className="fire">100%</span></>
+            : <><span className="muted">Рекорд — {rec} {plural(rec, DAYS)}</span><span className="muted">{Math.round(pct * 100)}% до рекорду</span></>}
+        </div>
+        {canUndo && a.relapses.length > 0 && (
+          <button className="link small" onPointerDown={stop} onClick={e => { stop(e); undo() }}><Icon name="undo" size={14} /> Скасувати останній зрив</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function AbstainScreen({ onOpen }: { onOpen: (o: Overlay) => void }) {
   const { state, update } = useStore()
   const now = useTick()
   const list = state.abstains.filter(a => !a.archived).sort((a, b) => a.order - b.order)
-
-  const undo = (a: A) => update(s => {
-    const x = s.abstains.find(y => y.id === a.id)!
-    const last = [...x.relapses].sort((p, q) => q.loggedAt - p.loggedAt)[0]
-    x.relapses = x.relapses.filter(r => r !== last && !(r.loggedAt === last.loggedAt && r.at === last.at))
-  })
+  const [activeId, setActiveId] = useState<string | null>(null)
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+  )
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveId(null)
+    markDragEnd()
+    if (!over || active.id === over.id) return
+    const ids = list.map(a => a.id)
+    const moved = arrayMove(ids, ids.indexOf(String(active.id)), ids.indexOf(String(over.id)))
+    update(s => { moved.forEach((id, i) => { s.abstains.find(x => x.id === id)!.order = i }) })
+  }
+  const active = list.find(a => a.id === activeId)
 
   return (
     <div className="page">
       <h1>Не роблю</h1>
-      <p className="muted small">Дні без зриву. Тут без пощади: зрив — з нуля.</p>
-      {list.map(a => {
-        const st = abstainStats(a, now)
-        const cur = spanText(st.currentMs)
-        const rec = fmtSpan(st.recordMs).days
-        const pct = st.recordMs ? Math.min(1, st.currentMs / st.recordMs) : 1
-        const lastLogged = Math.max(0, ...a.relapses.map(r => r.loggedAt))
-        const canUndo = now - lastLogged < UNDO_MS
-        return (
-          <div className="card abst" key={a.id}>
-            <div>
-              <button className="link-title" onClick={() => onOpen({ type: 'abstainEdit', id: a.id })}>{a.name}</button>
-              <div className="muted small">{a.relapses.length ? 'Після зриву' : 'Початок'}: {startText(st.lastStart)}</div>
-            </div>
-            <div className="row-between">
-              <div className="abst-num">
-                <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
-                <span className="abst-side">
-                  <span className="muted">{cur.unit}</span>
-                  <span className="clock">{clock(st.currentMs)}</span>
-                </span>
-              </div>
-              <button className="btn-outline danger" onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
-            </div>
-            <div className="bar"><div className={'bar-fill' + (st.isRecord ? ' fire' : '')} style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>
-            <div className="row-between small">
-              {!a.relapses.length
-                ? <><span className="muted">Жодного зриву</span><span /></>
-                : st.isRecord
-                ? <><span className="fire b">Новий рекорд</span><span className="fire">100%</span></>
-                : <><span className="muted">Рекорд — {rec} {plural(rec, DAYS)}</span><span className="muted">{Math.round(pct * 100)}% до рекорду</span></>}
-            </div>
-            {canUndo && a.relapses.length > 0 && (
-              <button className="link small" onClick={() => undo(a)}><Icon name="undo" size={14} /> Скасувати останній зрив</button>
-            )}
-          </div>
-        )
-      })}
+      <QuoteRotator />
+      <DndContext sensors={sensors} collisionDetection={closestCenter}
+        onDragStart={(e: DragStartEvent) => { setActiveId(String(e.active.id)); navigator.vibrate?.(25) }}
+        onDragEnd={onDragEnd} onDragCancel={() => { setActiveId(null); markDragEnd() }}>
+        <SortableContext items={list.map(a => a.id)} strategy={verticalListSortingStrategy}>
+          {list.map(a => <AbstainCard key={a.id} a={a} now={now} onOpen={onOpen} />)}
+        </SortableContext>
+        <DragOverlay>{active ? <div className="drag-ghost"><AbstainCard a={active} now={now} onOpen={() => {}} /></div> : null}</DragOverlay>
+      </DndContext>
       <button className="dashed" onClick={() => onOpen({ type: 'abstainEdit', id: null })}><Icon name="plus" size={18} /> Додати звичку</button>
     </div>
+  )
+}
+
+export function AbstainDetail({ id, onClose, onOpen }: { id: string; onClose: () => void; onOpen: (o: Overlay) => void }) {
+  const { state, update } = useStore()
+  const now = useTick()
+  const a = state.abstains.find(x => x.id === id)
+  const t0 = new Date(now)
+  const [ym, setYm] = useState({ y: t0.getFullYear(), m: t0.getMonth() })
+  if (!a) return null
+  const st = abstainStats(a, now)
+  const cur = spanText(st.currentMs)
+  const rels = [...a.relapses].sort((x, y) => y.at - x.at)
+  const day = 86400000
+  // календар
+  const first = new Date(ym.y, ym.m, 1)
+  const nDays = new Date(ym.y, ym.m + 1, 0).getDate()
+  const lead = (first.getDay() + 6) % 7
+  const relCount = (d: Date) => a.relapses.filter(r => { const x = new Date(r.at); return x.getFullYear() === d.getFullYear() && x.getMonth() === d.getMonth() && x.getDate() === d.getDate() }).length
+  const startDay = new Date(a.startAt); startDay.setHours(0, 0, 0, 0)
+  const todayD = new Date(now); todayD.setHours(0, 0, 0, 0)
+  // серії
+  const bounds = [a.startAt, ...[...a.relapses].map(r => r.at).sort((x, y) => x - y), now]
+  const series = bounds.slice(1).map((b, i) => b - bounds[i])
+  const maxS = Math.max(1, ...series)
+  const shift = (d: number) => setYm(({ y, m }) => { const n = new Date(y, m + d, 1); return { y: n.getFullYear(), m: n.getMonth() } })
+  const trig: Record<string, number> = {}
+  a.relapses.forEach(r => { if (r.trigger) trig[r.trigger] = (trig[r.trigger] ?? 0) + 1 })
+
+  return (
+    <Screen title={a.name} onBack={onClose} right={<button className="icon-btn" onClick={() => onOpen({ type: 'abstainEdit', id: a.id })} aria-label="Редагувати"><Icon name="edit" size={20} color="var(--muted)" /></button>}>
+      <div className="card">
+        <div className="muted small">{a.relapses.length ? 'Після зриву' : 'Початок'}: {startText(st.lastStart)}</div>
+        <div className="abst-num">
+          <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
+          <span className="abst-side"><span className="muted">{cur.unit}</span><span className="clock">{clock(st.currentMs)}</span></span>
+        </div>
+        <button className="btn danger-fill" onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
+      </div>
+      <div className="card trio4">
+        <div><div className="muted small">Рекорд</div><b>{fmtSpan(st.recordMs).days} дн.</b></div>
+        <div><div className="muted small">Зривів усього</div><b>{a.relapses.length}</b></div>
+        <div><div className="muted small">За місяць</div><b>{st.relapsesThisMonth}</b></div>
+        <div><div className="muted small">Сер. серія</div><b>{st.avgSeriesMs != null ? Math.floor(st.avgSeriesMs / day) + ' дн.' : '—'}</b></div>
+      </div>
+      <div className="card">
+        <div className="cal-head">
+          <button className="icon-btn" onClick={() => shift(-1)}><Icon name="chev" /></button>
+          <b>{monthTitle(ym.y, ym.m)}</b>
+          <button className="icon-btn" onClick={() => shift(1)}><Icon name="chevr" /></button>
+        </div>
+        <div className="cal">
+          {WD_SHORT.map(w => <div key={w} className="cal-wd">{w}</div>)}
+          {Array.from({ length: lead }, (_, i) => <div key={'e' + i} />)}
+          {Array.from({ length: nDays }, (_, i) => {
+            const d = new Date(ym.y, ym.m, i + 1)
+            const n = relCount(d)
+            const cls = d > todayD || d < startDay ? 'future' : n ? 'empty' : d.getTime() === todayD.getTime() ? 'today' : 'full'
+            return <div key={i} className={'cal-cell ' + cls}>{i + 1}{n > 1 ? <sup>×{n}</sup> : null}</div>
+          })}
+        </div>
+        <div className="legend"><span><i className="dot full" />Без зриву</span><span><i className="dot empty" />Зрив</span><span><i className="dot today" />Сьогодні</span></div>
+      </div>
+      {series.length > 1 && (
+        <div className="card">
+          <b>Серії</b>
+          <div className="bars tall">
+            {series.slice(-14).map((v, i, arr) => (
+              <div key={i} className="barcol">
+                <span className="barlbl">{Math.floor(v / day)}</span>
+                <div className={'barv' + (i === arr.length - 1 ? ' last' : '')} style={{ height: `${Math.max(4, (v / maxS) * 100)}%` }} />
+              </div>
+            ))}
+          </div>
+          <div className="muted small">Дні між зривами; помаранчева — поточна серія</div>
+        </div>
+      )}
+      {Object.keys(trig).length > 0 && (
+        <div className="card"><b>Тригери</b>
+          {Object.entries(trig).sort((x, y) => y[1] - x[1]).map(([k, v]) => (
+            <div key={k} className="row-between"><span>{k}</span><span className="muted">×{v}</span></div>
+          ))}
+        </div>
+      )}
+      <div className="sub-head b">Історія зривів</div>
+      {rels.length ? (
+        <div className="card list">
+          {rels.map(r => (
+            <div className="list-row" key={r.loggedAt + '-' + r.at}>
+              <div className="list-main">
+                <div>{startText(r.at)}</div>
+                {(r.trigger || r.note) && <div className="muted small">{[r.trigger, r.note].filter(Boolean).join(' — ')}</div>}
+              </div>
+              <button className="icon-btn sm" aria-label="Видалити зрив" onClick={() => {
+                if (confirm('Видалити цей зрив з історії? Серії перерахуються.')) update(s => { const x = s.abstains.find(y => y.id === a.id)!; x.relapses = x.relapses.filter(q => !(q.at === r.at && q.loggedAt === r.loggedAt)) })
+              }}><Icon name="trash" size={18} color="var(--muted)" /></button>
+            </div>
+          ))}
+        </div>
+      ) : <div className="muted center pad">Жодного зриву 💪</div>}
+    </Screen>
   )
 }
 

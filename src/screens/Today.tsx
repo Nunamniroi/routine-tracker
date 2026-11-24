@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, closestCenter, useDroppable, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { justDragged, markDragEnd } from '../ui/dragGuard'
 import { useStore } from '../lib/store'
 import { activeHabits, dayParts, globalStreak, habitStreak, isPaused, isScheduled, bestValue } from '../lib/streaks'
 import type { Habit, Routine } from '../lib/types'
@@ -29,6 +30,7 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
   const best = h.kind !== 'check' ? bestValue(state, h.id) : null
 
   const toggle = () => {
+    if (justDragged()) return
     if (done) setEntry(dateKey, h.id, null)
     else if (h.valueRequired && h.kind !== 'check') onOpen({ type: 'value', habitId: h.id, key: dateKey })
     else setEntry(dateKey, h.id, { done: true, value: entry?.value })
@@ -47,7 +49,7 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
       <button className={'check' + (done ? ' done' : grace ? ' grace' : '')} onClick={toggle} aria-label={done ? 'Зняти відмітку' : 'Відмітити'}>
         {done && <Icon name="check" size={16} color="var(--bg)" />}
       </button>
-      <button className="hrow-body" onClick={() => onOpen({ type: 'value', habitId: h.id, key: dateKey })}>
+      <button className="hrow-body" onClick={() => { if (!justDragged()) onOpen({ type: 'value', habitId: h.id, key: dateKey }) }}>
         <div className="hrow-name">{h.name}</div>
         <div className={'hrow-meta' + (grace ? ' grace' : '')}>
           <Icon name={grace ? 'heart' : 'flame'} size={15} color={grace ? 'var(--grace)' : done ? 'var(--fire)' : 'var(--muted)'} />
@@ -156,6 +158,7 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
     })
   }
   const onDragEnd = ({ active, over }: DragEndEvent) => {
+    markDragEnd()
     if (!drag) return
     let items = drag.items
     const id = String(active.id)
@@ -222,7 +225,7 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
       )}
       {!paused && g.todayFull && <div className="banner ok"><Icon name="check" size={18} /> <div><b>День зараховано</b><div className="small">Стрік +1</div></div></div>}
 
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setDrag(null)}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => { setDrag(null); markDragEnd() }}>
         {order.map(r => {
           const list = cur[r].map(byId).filter(Boolean)
           const col = r === 'morning' ? morningCollapsed : eveningCollapsed

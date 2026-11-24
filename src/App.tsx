@@ -4,7 +4,7 @@ import { Icon, Toast } from './ui/kit'
 import { Today } from './screens/Today'
 import { ValueSheet } from './screens/ValueSheet'
 import { Timer } from './screens/Timer'
-import { AbstainEdit, AbstainScreen, RelapseSheet } from './screens/Abstain'
+import { AbstainDetail, AbstainEdit, AbstainScreen, RelapseSheet } from './screens/Abstain'
 import { Stats } from './screens/Stats'
 import { DayEdit } from './screens/DayEdit'
 import { HabitEdit, PauseSheet, SettingsScreen } from './screens/Settings'
@@ -20,6 +20,7 @@ export type Overlay =
   | { type: 'abstainEdit'; id: string | null }
   | { type: 'relapse'; id: string }
   | { type: 'pause' }
+  | { type: 'abstain'; id: string }
 
 type Tab = 'today' | 'abstain' | 'ach' | 'stats'
 
@@ -89,6 +90,7 @@ function Shell() {
         switch (o.type) {
           case 'settings': return <div key={i} style={style}><SettingsScreen onClose={close} onOpen={open} /></div>
           case 'habit': return <div key={i} style={style}><HabitEdit habitId={o.habitId} onClose={close} /></div>
+          case 'abstain': return <div key={i} style={style}><AbstainDetail id={o.id} onClose={close} onOpen={open} /></div>
           case 'day': return <div key={i} style={style}><DayEdit dateKey={o.key} onClose={close} /></div>
           case 'timer': return <div key={i} style={style}><Timer habitId={o.habitId} dateKey={o.key} onClose={() => setStack(s => s.filter(x => x !== o && x.type !== 'value'))} /></div>
           default: return null
