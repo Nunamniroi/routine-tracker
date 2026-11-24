@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store'
-import { abstainStats, activeHabits, dayStatus, fmtSpan, globalStreak, habitDots, habitStreak, moodEffects, valuesSeries, bestValue } from '../lib/streaks'
+import { abstainStats, activeHabits, dayStatus, fmtSpan, spanShort, globalStreak, habitDots, habitStreak, moodEffects, valuesSeries, bestValue } from '../lib/streaks'
 import { DAYS, WD_SHORT, addDays, fmtKey, monthTitle, plural, weekday, dayKey, fmtDuration } from '../lib/date'
 import { Icon, Segmented } from '../ui/kit'
 import { fmtValue, streakLabel } from './Today'
@@ -69,6 +69,7 @@ function RoutineStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
       </div>
 
       <div className="row-between sub-head"><b>Практики</b><span className="muted small">останні 14 днів</span></div>
+      {activeHabits(state).length === 0 && <div className="muted center pad">Ще немає справ — додай їх на екрані «Сьогодні».</div>}
       {activeHabits(state).map(h => {
         const st = habitStreak(state, h, today)
         const dots = habitDots(state, h, today, 14)
@@ -135,17 +136,17 @@ function AbstainStatsView() {
       </div>
       {all.map(({ a, st }) => {
         const relDays = new Set(a.relapses.filter(r => new Date(r.at).getMonth() === d.getMonth() && new Date(r.at).getFullYear() === d.getFullYear()).map(r => new Date(r.at).getDate()))
-        const cur = fmtSpan(st.currentMs).days
-        const rec = fmtSpan(st.recordMs).days
+        const s0 = new Date(a.startAt); s0.setHours(0, 0, 0, 0)
+        const startDay = s0.getFullYear() === d.getFullYear() && s0.getMonth() === d.getMonth() ? s0.getDate() : s0 < d ? 1 : 99
         return (
           <div className="card" key={a.id}>
-            <div className="row-between"><b>{a.name}</b><span className={st.isRecord ? 'fire b' : 'b'}>зараз {cur} дн.</span></div>
+            <div className="row-between"><b>{a.name}</b><span className={(st.isRecord ? 'fire b' : 'b') + ' nowrap'}>зараз {spanShort(st.currentMs, true)}</span></div>
             <div className="trio">
-              <div><div className="muted small">Рекорд</div><b>{rec} дн.</b></div>
+              <div><div className="muted small">Рекорд</div><b>{spanShort(st.recordMs, true)}</b></div>
               <div><div className="muted small">Зривів за міс.</div><b>{st.relapsesThisMonth}</b></div>
-              <div><div className="muted small">Середня серія</div><b>{st.avgSeriesMs != null ? fmtSpan(st.avgSeriesMs).days + ' дн.' : '—'}</b></div>
+              <div><div className="muted small">Середня серія</div><b>{st.avgSeriesMs != null ? spanShort(st.avgSeriesMs, true) : '—'}</b></div>
             </div>
-            <div className="strip">{Array.from({ length: nDays }, (_, i) => <i key={i} className={relDays.has(i + 1) ? 'bad' : i + 1 <= d.getDate() ? 'ok' : ''} />)}</div>
+            <div className="strip">{Array.from({ length: nDays }, (_, i) => <i key={i} className={relDays.has(i + 1) ? 'bad' : i + 1 <= d.getDate() && i + 1 >= startDay ? 'ok' : ''} />)}</div>
             <TriggerList a={a} />
           </div>
         )
@@ -191,7 +192,7 @@ function MoodStats() {
       {effects.length ? effects.map(e => (
         <div className="card row-between" key={e.habit.id}>
           <div><div>{e.habit.name}</div><div className="muted small">{e.withAvg.toFixed(1)} з нею · {e.withoutAvg.toFixed(1)} без</div></div>
-          <span className={'badge ' + (e.diff >= 0 ? 'done' : 'bad')}>{e.diff >= 0 ? '+' : ''}{e.diff.toFixed(1)}</span>
+          <span className={'badge ' + (Math.abs(e.diff) < 0.05 ? '' : e.diff > 0 ? 'done' : 'bad')}>{Math.abs(e.diff) < 0.05 ? '0.0' : (e.diff > 0 ? '+' : '−') + Math.abs(e.diff).toFixed(1)}</span>
         </div>
       )) : <div className="muted small pad">Потрібно хоча б 3 дні з практикою і 3 без неї з оцінкою самопочуття.</div>}
       <div className="muted small">Кореляція, а не доказ — але закономірність видно.</div>

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useStore, uid, emptyState } from '../lib/store'
+import { useStore, uid, emptyState, parseBackup } from '../lib/store'
 import { activeHabits, rulesOf } from '../lib/streaks'
 import { addDays, cmpKey, humanDate, diffDays, plural, DAYS } from '../lib/date'
 import type { Habit, HabitKind, Routine, State, TimerMode } from '../lib/types'
@@ -47,9 +47,8 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
 
   const restore = async (f: File) => {
     try {
-      const data = JSON.parse(await f.text()) as State
-      if (!data || data.version !== 1 || !Array.isArray(data.habits)) throw new Error('bad')
-      if (confirm('Замінити всі поточні дані даними з копії?')) replaceState({ ...emptyState(), ...data })
+      const data = await parseBackup(f)
+      if (confirm('Замінити всі поточні дані даними з копії?')) replaceState(data)
     } catch { alert('Не вдалося прочитати файл копії') }
   }
 
@@ -148,7 +147,9 @@ export function PauseSheet({ onClose }: { onClose: () => void }) {
         {list.map(p => (
           <div className="list-row" key={p.id}>
             <span className="list-main">{p.reason}: {humanDate(p.from, false)} – {humanDate(p.to, false)}</span>
-            {cmpKey(p.to, today) >= 0 && <button className="link small" onClick={() => update(s => { const x = s.pauses.find(y => y.id === p.id)!; if (cmpKey(x.from, today) > 0) s.pauses = s.pauses.filter(y => y.id !== p.id); else x.to = addDays(today, -1) })}>Завершити</button>}
+            {cmpKey(p.from, today) <= 0 && cmpKey(p.to, today) >= 0
+              ? <button className="link small" onClick={() => update(s => { const x = s.pauses.find(y => y.id === p.id)!; if (cmpKey(x.from, today) >= 0) s.pauses = s.pauses.filter(y => y.id !== p.id); else x.to = addDays(today, -1) })}>Завершити</button>
+              : <button className="icon-btn sm" aria-label="Видалити паузу" onClick={() => { if (confirm(`Видалити паузу «${p.reason}»? Ці дні знову рахуватимуться.`)) update(s => { s.pauses = s.pauses.filter(y => y.id !== p.id) }) }}><Icon name="trash" size={18} color="var(--muted)" /></button>}
           </div>
         ))}
       </>}
@@ -210,7 +211,7 @@ export function HabitEdit({ habitId, onClose }: { habitId: string | null; onClos
       {h.schedule.type === 'perWeek' && (
         <div className="row gap center-items">
           <button className="btn ghost narrow" onClick={() => p({ schedule: { type: 'perWeek', n: Math.max(1, (h.schedule as { n: number }).n - 1) } })}>−</button>
-          <b className="big-num sm">{h.schedule.n}</b><span className="muted">рази на тиждень</span>
+          <b className="big-num sm">{h.schedule.n}</b><span className="muted">{plural(h.schedule.n, ['раз', 'рази', 'разів'])} на тиждень</span>
           <button className="btn ghost narrow" onClick={() => p({ schedule: { type: 'perWeek', n: Math.min(7, (h.schedule as { n: number }).n + 1) } })}>+</button>
         </div>
       )}

@@ -1,5 +1,5 @@
 import type { Abstain, DayRules, Habit, State } from './types'
-import { addDays, cmpKey, weekStart } from './date'
+import { addDays, cmpKey, weekStart, plural, DAYS } from './date'
 
 // ───────────────────────── базові перевірки ─────────────────────────
 
@@ -324,6 +324,15 @@ export function abstainStats(a: Abstain, now: number): AbstainStats {
     avgSeriesMs: series.length ? series.reduce((s, x) => s + x, 0) / series.length : null,
     lastStart,
   }
+}
+
+/** Коротко про тривалість: «12 днів» / «5 год» / «3 хв». compact → «12 дн.» */
+export function spanShort(ms: number, compact = false): string {
+  const m = Math.floor(Math.max(0, ms) / 60000)
+  const d = Math.floor(m / 1440)
+  if (d >= 1) return compact ? `${d} дн.` : `${d} ${plural(d, DAYS)}`
+  if (m >= 60) return `${Math.floor(m / 60)} год`
+  return `${m} хв`
 }
 
 export function fmtSpan(ms: number): { days: number; hours: number } {

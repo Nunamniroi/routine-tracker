@@ -126,7 +126,9 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
   const eveningFirst = hour >= 15 || hour < state.settings.dayStartHour
   const morningAllDone = morning.length > 0 && morning.every(h => state.days[today]?.entries[h.id]?.done)
   const [manual, setManual] = useState<Record<Routine, boolean | undefined>>({ morning: undefined, evening: undefined })
-  const morningCollapsed = manual.morning ?? (eveningFirst && p.morningDone > 0 || morningAllDone)
+  // авто-згортання вирішуємо лише при відкритті екрана — щоб секція не зникала з-під пальця
+  const [autoCollapse] = useState(() => eveningFirst && p.morningDone > 0 || morningAllDone)
+  const morningCollapsed = manual.morning ?? autoCollapse
   const eveningCollapsed = manual.evening ?? false
   const toggle = (r: Routine, cur: boolean) => setManual(m => ({ ...m, [r]: !cur }))
 
@@ -254,7 +256,10 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
 function Empty({ onOpen }: { onOpen: (o: Overlay) => void }) {
   return (
     <div className="page empty">
-      <h1>Сьогодні</h1>
+      <div className="page-head">
+        <h1>Сьогодні</h1>
+        <button className="icon-btn" onClick={() => onOpen({ type: 'settings' })} aria-label="Налаштування"><Icon name="sliders" size={24} color="var(--muted)" /></button>
+      </div>
       <div className="empty-icon"><Icon name="flame" size={64} color="var(--border)" /></div>
       <h2>Почнемо з малого</h2>
       <p className="muted center">Додай 1–3 справи на ранок і 1–3 на вечір.<br />Більше — потім, коли втягнешся.</p>

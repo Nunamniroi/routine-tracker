@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store'
 import { dayStatus, isPaused } from '../lib/streaks'
-import { cmpKey, fmtDuration, humanDate } from '../lib/date'
+import { cmpKey, fmtDuration, humanDate, weekday } from '../lib/date'
 import type { DayLog, Habit, State } from '../lib/types'
 import { Icon, Screen, parseDuration } from '../ui/kit'
 import { MoodCard } from './MoodCard'
@@ -58,7 +58,7 @@ export function DayEdit({ dateKey, onClose }: { dateKey: string; onClose: () => 
     return (
       <div className="mini" key={h.id}>
         <button className={'check sm' + (e?.done ? ' done' : '')} onClick={() => toggle(h)}>{e?.done && <Icon name="check" size={14} color="var(--bg)" />}</button>
-        <span className="mini-name">{h.name}</span>
+        <span className="mini-name">{h.name}{h.schedule.type === 'weekdays' && !h.schedule.days.includes(weekday(dateKey)) && <span className="muted small"> · поза розкладом</span>}</span>
         {h.kind !== 'check' && <input className="input mini-input" inputMode="decimal" placeholder={h.kind === 'time' ? 'хв:сек' : h.unit ?? ''} value={txt} onChange={ev => setVal(h, ev.target.value)} />}
       </div>
     )

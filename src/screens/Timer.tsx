@@ -123,7 +123,7 @@ export function Timer({ habitId, dateKey, onClose }: { habitId: string; dateKey:
         <div className="topbar-right" />
       </div>
       <div className="timer-body">
-        <Segmented value={saved.mode} onChange={(m: Mode) => setSaved(s => ({ ...s, mode: m }))} options={[['stopwatch', 'Секундомір'], ['countdown', 'Відлік']]} />
+        <div className={elapsed > 0 || running ? 'locked-ui' : ''}><Segmented value={saved.mode} onChange={(m: Mode) => setSaved(s => ({ ...s, mode: m }))} options={[['stopwatch', 'Секундомір'], ['countdown', 'Відлік']]} /></div>
         <div className="ring-wrap">
           <svg viewBox="0 0 280 280" className="ring">
             <circle cx="140" cy="140" r={R} fill="none" stroke="var(--s2)" strokeWidth="14" />

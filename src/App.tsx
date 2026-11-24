@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { StoreProvider, presetHabits, useStore } from './lib/store'
+import { StoreProvider, parseBackup, presetHabits, useStore } from './lib/store'
 import { Icon, Toast } from './ui/kit'
 import { Today } from './screens/Today'
 import { ValueSheet } from './screens/ValueSheet'
@@ -25,7 +25,8 @@ export type Overlay =
 type Tab = 'today' | 'abstain' | 'ach' | 'stats'
 
 function Shell() {
-  const { loaded, state, today, now, update } = useStore()
+  const { loaded, state, today, now, update, replaceState } = useStore()
+  const restoreRef = useRef<HTMLInputElement>(null)
   const [tab, setTab] = useState<Tab>('today')
   const [stack, setStack] = useState<Overlay[]>([])
   const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null)
@@ -77,6 +78,11 @@ function Shell() {
         <button className="btn primary" onClick={() => update(s => { s.habits = presetHabits(today); s.onboarded = true })}>Завантажити мою рутину (11 справ)</button>
         <button className="btn ghost" onClick={() => update(s => { s.onboarded = true })}>Почати з нуля</button>
         <p className="muted small center">Справи потім можна змінити в налаштуваннях.</p>
+        <button className="link small center-self" onClick={() => restoreRef.current?.click()}><Icon name="undo" size={14} /> Відновити з резервної копії</button>
+        <input ref={restoreRef} type="file" accept="application/json,.json" hidden onChange={async e => {
+          const f = e.target.files?.[0]; if (!f) return
+          try { replaceState(await parseBackup(f)) } catch { alert('Не вдалося прочитати файл копії') }
+        }} />
       </div>
     )
   }

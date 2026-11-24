@@ -12,7 +12,7 @@ export const unitWord = (n: number, unit: 'days' | 'weeks') => plural(n, unit ==
 export function Badge({ n, unit, tier, locked, size = 64 }: { n: number; unit: 'days' | 'weeks'; tier: Tier; locked?: boolean; size?: number }) {
   return (
     <div className={`badge-medal ${locked ? 'locked' : tier}`} style={{ width: size, height: size }}>
-      <span className="medal-num" style={{ fontSize: size * (n >= 100 ? 0.3 : 0.38) }}>{n}</span>
+      <span className="medal-num" style={{ fontSize: size * (n >= 1000 ? 0.22 : n >= 100 ? 0.28 : 0.38) }}>{n}</span>
       <span className="medal-unit" style={{ fontSize: Math.max(9, size * 0.15) }}>{unit === 'weeks' ? 'тиж' : 'дн'}</span>
     </div>
   )

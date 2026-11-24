@@ -58,6 +58,14 @@ function clone<T>(x: T): T {
   return typeof structuredClone === 'function' ? structuredClone(x) : JSON.parse(JSON.stringify(x))
 }
 
+/** Розбір файлу резервної копії. Кидає помилку, якщо файл не наш. */
+export async function parseBackup(f: File): Promise<State> {
+  const data = JSON.parse(await f.text()) as State
+  if (!data || data.version !== 1 || !Array.isArray(data.habits)) throw new Error('bad backup')
+  const base = emptyState()
+  return { ...base, ...data, settings: { ...base.settings, ...data.settings }, onboarded: true }
+}
+
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>(emptyState)
   const [loaded, setLoaded] = useState(false)
@@ -82,6 +90,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     document.addEventListener('visibilitychange', onVis)
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
   }, [])
+
+  const latest = useRef(state)
+  latest.current = state
+  useEffect(() => {
+    // при згортанні застосунку зберігаємо одразу, без затримки
+    const flush = () => {
+      if (!loaded) return
+      window.clearTimeout(saveTimer.current)
+      set(KEY, latest.current).catch(() => { try { localStorage.setItem(KEY, JSON.stringify(latest.current)) } catch { /* empty */ } })
+    }
+    const onHide = () => { if (document.visibilityState === 'hidden') flush() }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', flush)
+    return () => { document.removeEventListener('visibilitychange', onHide); window.removeEventListener('pagehide', flush) }
+  }, [loaded])
 
   useEffect(() => {
     if (!loaded) return

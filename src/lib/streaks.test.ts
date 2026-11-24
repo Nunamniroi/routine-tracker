@@ -199,3 +199,14 @@ describe('налаштовувані правила дня', () => {
     expect(dayStatus(s, addDays(T, -1), T)).toBe('full')
   })
 })
+
+describe('spanShort', () => {
+  it('показує хвилини, години і дні', async () => {
+    const { spanShort } = await import('./streaks')
+    expect(spanShort(30_000)).toBe('0 хв')
+    expect(spanShort(150_000)).toBe('2 хв')
+    expect(spanShort(5 * 3600_000 + 1)).toBe('5 год')
+    expect(spanShort(86400_000 * 21)).toBe('21 день')
+    expect(spanShort(86400_000 * 5, true)).toBe('5 дн.')
+  })
+})

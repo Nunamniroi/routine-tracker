@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useStore, uid } from '../lib/store'
-import { abstainStats, fmtSpan } from '../lib/streaks'
+import { abstainStats, fmtSpan, spanShort } from '../lib/streaks'
 import { DAYS, plural, humanDate, dayKey, monthTitle, WD_SHORT } from '../lib/date'
 import { QUOTES } from '../lib/quotes'
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
@@ -59,7 +59,6 @@ function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overla
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: a.id })
   const st = abstainStats(a, now)
   const cur = spanText(st.currentMs)
-  const rec = fmtSpan(st.recordMs).days
   const pct = st.recordMs ? Math.min(1, st.currentMs / st.recordMs) : 1
   const lastLogged = Math.max(0, ...a.relapses.map(r => r.loggedAt))
   const canUndo = now - lastLogged < UNDO_MS
@@ -95,7 +94,7 @@ function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overla
             ? <><span className="muted">Жодного зриву</span><span /></>
             : st.isRecord
             ? <><span className="fire b">Новий рекорд</span><span className="fire">100%</span></>
-            : <><span className="muted">Рекорд — {rec} {plural(rec, DAYS)}</span><span className="muted">{Math.round(pct * 100)}% до рекорду</span></>}
+            : <><span className="muted">Рекорд — {spanShort(st.recordMs)}</span>{st.recordMs >= 86400000 && <span className="muted">{Math.round(pct * 100)}% до рекорду</span>}</>}
         </div>
         {canUndo && a.relapses.length > 0 && (
           <button className="link small" onPointerDown={stop} onClick={e => { stop(e); undo() }}><Icon name="undo" size={14} /> Скасувати останній зрив</button>
@@ -178,10 +177,10 @@ export function AbstainDetail({ id, onClose, onOpen }: { id: string; onClose: ()
         <button className="btn danger-fill" onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
       </div>
       <div className="card trio4">
-        <div><div className="muted small">Рекорд</div><b>{fmtSpan(st.recordMs).days} дн.</b></div>
+        <div><div className="muted small">Рекорд</div><b>{spanShort(st.recordMs, true)}</b></div>
         <div><div className="muted small">Зривів усього</div><b>{a.relapses.length}</b></div>
         <div><div className="muted small">За місяць</div><b>{st.relapsesThisMonth}</b></div>
-        <div><div className="muted small">Сер. серія</div><b>{st.avgSeriesMs != null ? Math.floor(st.avgSeriesMs / day) + ' дн.' : '—'}</b></div>
+        <div><div className="muted small">Сер. серія</div><b>{st.avgSeriesMs != null ? spanShort(st.avgSeriesMs, true) : '—'}</b></div>
       </div>
       <div className="card">
         <div className="cal-head">
@@ -196,12 +195,12 @@ export function AbstainDetail({ id, onClose, onOpen }: { id: string; onClose: ()
             const d = new Date(ym.y, ym.m, i + 1)
             const n = relCount(d)
             const cls = d > todayD || d < startDay ? 'future' : n ? 'empty' : d.getTime() === todayD.getTime() ? 'today' : 'full'
-            return <div key={i} className={'cal-cell ' + cls}>{i + 1}{n > 1 ? <sup>×{n}</sup> : null}</div>
+            return <div key={i} className={'cal-cell ' + cls + (n && d.getTime() === todayD.getTime() ? ' today-ring' : '')}>{i + 1}{n > 1 ? <sup>×{n}</sup> : null}</div>
           })}
         </div>
         <div className="legend"><span><i className="dot full" />Без зриву</span><span><i className="dot empty" />Зрив</span><span><i className="dot today" />Сьогодні</span></div>
       </div>
-      {series.length > 1 && (
+      {series.length > 1 && maxS >= day && (
         <div className="card">
           <b>Серії</b>
           <div className="bars tall">
@@ -274,7 +273,7 @@ export function RelapseSheet({ id, onClose, onToast }: { id: string; onClose: ()
 
   return (
     <Sheet open onClose={onClose} title={`Зірвався: ${a.name}?`}>
-      <p className="muted">Серія {cur.days} {cur.unit} {cur.hours} год обнулиться.<br />Рекорд {fmtSpan(st.recordMs).days} {plural(fmtSpan(st.recordMs).days, DAYS)} збережеться.</p>
+      <p className="muted">Серія {cur.days ? `${cur.days} ${cur.unit} ${cur.hours} год` : spanShort(st.currentMs)} обнулиться.<br />Рекорд {spanShort(st.recordMs)} збережеться.</p>
       <Label>Коли</Label>
       <Segmented value={when} onChange={setWhen} options={[['now', 'Зараз'], ['other', 'Інший час']]} />
       {when === 'other' && <input className="input" type="datetime-local" value={at} onChange={e => setAt(e.target.value)} />}
