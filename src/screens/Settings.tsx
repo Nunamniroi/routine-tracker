@@ -6,6 +6,7 @@ import type { Habit, HabitKind, Routine, State, TimerMode } from '../lib/types'
 import { Chips, Icon, Label, Screen, Segmented, Sheet, Stepper, Switch, parseDuration } from '../ui/kit'
 import { fmtDuration } from '../lib/date'
 import type { Overlay } from '../App'
+import { THEME_NAMES } from '../ui/theme'
 
 function download(name: string, data: string, type: string) {
   const blob = new Blob([data], { type })
@@ -102,9 +103,9 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
 
       <div className="group-title">ВИГЛЯД</div>
       <div className="card">
-        <Segmented value={st.theme ?? 'auto'} onChange={(v: 'auto' | 'light' | 'color' | 'dark') => set(x => { x.theme = v })}
-          options={[['auto', 'Авто'], ['light', 'Ранок'], ['color', 'День'], ['dark', 'Ніч']]} />
-        <div className="muted small">Авто: 04–11 світла, 11–17 кольорова, 17–04 темна.</div>
+        <Chips options={THEME_NAMES.map(x => x[1])} value={(THEME_NAMES.find(x => x[0] === (st.theme ?? 'auto')) ?? THEME_NAMES[0])[1]}
+          onChange={(v: string | null) => { const m = THEME_NAMES.find(x => x[1] === v)?.[0] ?? 'auto'; set(x => { x.theme = m as NonNullable<typeof x.theme> }) }} />
+        <div className="muted small">Авто: ранок 04–10 · день 10–13 · обід 13–17 · вечір 17–21 · ніч 21–04</div>
       </div>
 
       <div className="group-title">ДЕНЬ І СТРІКИ</div>

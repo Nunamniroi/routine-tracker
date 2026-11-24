@@ -57,7 +57,7 @@ export function DayEdit({ dateKey, onClose }: { dateKey: string; onClose: () => 
     const txt = texts[h.id] ?? (e?.value != null ? (h.kind === 'time' ? fmtDuration(e.value) : String(e.value)) : '')
     return (
       <div className="mini" key={h.id}>
-        <button className={'check sm' + (e?.done ? ' done' : '')} onClick={() => toggle(h)}>{e?.done && <Icon name="check" size={14} color="var(--bg)" />}</button>
+        <button className={'check sm' + (e?.done ? ' done' : '')} onClick={() => toggle(h)}>{e?.done && <Icon name="check" size={14} color="var(--on-accent)" />}</button>
         <span className="mini-name">{h.name}{h.schedule.type === 'weekdays' && !h.schedule.days.includes(weekday(dateKey)) && <span className="muted small"> · поза розкладом</span>}</span>
         {h.kind !== 'check' && <input className="input mini-input" inputMode="decimal" placeholder={h.kind === 'time' ? 'хв:сек' : h.unit ?? ''} value={txt} onChange={ev => setVal(h, ev.target.value)} />}
       </div>

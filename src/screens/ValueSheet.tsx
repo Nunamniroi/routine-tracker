@@ -40,7 +40,7 @@ export function ValueSheet({ habitId, dateKey, onClose, onOpen }: { habitId: str
         <>
           {dateKey === today && (
             <button className="btn primary" onClick={() => onOpen({ type: 'timer', habitId: h.id, key: dateKey })}>
-              <Icon name="play" size={18} color="var(--bg)" /> Таймер
+              <Icon name="play" size={18} color="var(--on-accent)" /> Таймер
             </button>
           )}
           <div className="label">Або вручну (хв:сек або просто хвилини)</div>

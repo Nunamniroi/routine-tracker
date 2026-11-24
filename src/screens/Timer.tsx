@@ -150,7 +150,7 @@ export function Timer({ habitId, dateKey, onClose }: { habitId: string; dateKey:
 
       <div className="timer-actions">
         <button className={'big-btn' + (running ? ' pause' : '')} onClick={running ? pause : start} aria-label={running ? 'Пауза' : 'Старт'}>
-          {running ? <span className="pause-bars"><i /><i /></span> : <Icon name="play" size={48} color="var(--bg)" />}
+          {running ? <span className="pause-bars"><i /><i /></span> : <Icon name="play" size={48} color="var(--on-accent)" />}
         </button>
         <div className="row gap">
           <button className="btn ghost" onClick={reset} disabled={elapsed === 0}>Скинути</button>

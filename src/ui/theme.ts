@@ -1,21 +1,26 @@
-// Тема за часом доби: ранок — світла, день — кольорова, вечір і ніч — темна.
-export type ThemeMode = 'auto' | 'light' | 'color' | 'dark'
-export type Theme = Exclude<ThemeMode, 'auto'>
+// 5 тем за часом доби, як у прогнозах погоди: ранок, день, обід, вечір, ніч.
+export type Theme = 'morning' | 'day' | 'noon' | 'evening' | 'night'
+export type ThemeMode = 'auto' | Theme
 
-/** Межі для «Авто»: 04–11 світла, 11–17 кольорова, 17–04 темна */
+export const THEME_NAMES: [ThemeMode, string][] = [['auto', 'Авто'], ['morning', 'Ранок'], ['day', 'День'], ['noon', 'Обід'], ['evening', 'Вечір'], ['night', 'Ніч']]
+
+/** Межі для «Авто»: ранок 04–10, день 10–13, обід 13–17, вечір 17–21, ніч 21–04 */
 export function autoTheme(date: Date): Theme {
   const h = date.getHours()
-  if (h >= 4 && h < 11) return 'light'
-  if (h >= 11 && h < 17) return 'color'
-  return 'dark'
+  if (h >= 4 && h < 10) return 'morning'
+  if (h >= 10 && h < 13) return 'day'
+  if (h >= 13 && h < 17) return 'noon'
+  if (h >= 17 && h < 21) return 'evening'
+  return 'night'
 }
 
-export function applyTheme(mode: ThemeMode = 'auto', date = new Date()) {
-  const t = mode === 'auto' ? autoTheme(date) : mode
+export function applyTheme(mode: ThemeMode | string = 'auto', date = new Date()) {
+  const valid = THEME_NAMES.some(([k]) => k === mode)
+  const t = !valid || mode === 'auto' ? autoTheme(date) : (mode as Theme)
   const root = document.documentElement
   if (root.dataset.theme !== t) {
     root.dataset.theme = t
-    const bg = getComputedStyle(root).getPropertyValue('--bg').trim()
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bg || '#0E0F12')
+    const bar = getComputedStyle(root).getPropertyValue('--bar').trim()
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', bar || '#0E0F12')
   }
 }

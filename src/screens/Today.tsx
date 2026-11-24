@@ -47,7 +47,7 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
   return (
     <div className={'hrow' + (grace ? ' grace' : '')}>
       <button className={'check' + (done ? ' done' : grace ? ' grace' : '')} onClick={toggle} aria-label={done ? 'Зняти відмітку' : 'Відмітити'}>
-        {done && <Icon name="check" size={16} color="var(--bg)" />}
+        {done && <Icon name="check" size={16} color="var(--on-accent)" />}
       </button>
       <button className="hrow-body" onClick={() => { if (!justDragged()) onOpen({ type: 'value', habitId: h.id, key: dateKey }) }}>
         <div className="hrow-name">{h.name}</div>
