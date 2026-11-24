@@ -41,3 +41,27 @@ describe('досягнення', () => {
     expect(ids).not.toContain('abst:x:21')
   })
 })
+
+describe('скидання досягнень', () => {
+  it('після скидання «не роблю» рахується з нуля, а інші треки не чіпає', async () => {
+    const { resetAchievements, tracks, trackKey } = await import('./achievements')
+    const D = 86400000, now = Date.UTC(2026, 10, 25, 12)
+    const s = {
+      version: 1, habits: [], days: {}, pauses: [], onboarded: true,
+      settings: { dayStartHour: 4, remindMorning: { on: false, time: '09:00' }, remindEvening: { on: false, time: '21:00' } },
+      abstains: [
+        { id: 'a', name: 'A', startAt: now - 40 * D, relapses: [], order: 0 },
+        { id: 'b', name: 'B', startAt: now - 10 * D, relapses: [], order: 1 },
+      ],
+    } as unknown as import('./types').State
+    const before = tracks(s, '2026-11-25', now)
+    expect(before.find(t => t.refId === 'a')!.best).toBe(40)
+    resetAchievements(s, trackKey('abst', 'a'), now)
+    const after = tracks(s, '2026-11-25', now + D * 2)
+    expect(after.find(t => t.refId === 'a')!.best).toBe(2)
+    expect(after.find(t => t.refId === 'b')!.best).toBe(12)
+    expect(Object.keys(s.achievements!).some(k => k.startsWith('abst:a:'))).toBe(false)
+    resetAchievements(s, 'all', now + D * 2)
+    expect(tracks(s, '2026-11-25', now + D * 3).find(t => t.refId === 'b')!.best).toBe(1)
+  })
+})

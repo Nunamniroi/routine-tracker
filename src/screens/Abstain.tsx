@@ -11,7 +11,7 @@ import type { Abstain as A } from '../lib/types'
 import { Chips, Icon, Label, Screen, Segmented, Sheet } from '../ui/kit'
 import type { Overlay } from '../App'
 import { progressColor } from '../ui/colors'
-import { DAY_MILESTONES, titleOf } from '../lib/achievements'
+import { DAY_MILESTONES, achFromFor, clipAbstain, titleOf } from '../lib/achievements'
 
 const UNDO_MS = 10 * 60 * 1000
 const DAY_MS = 86400000
@@ -25,7 +25,8 @@ function leftText(ms: number) {
 }
 
 /** Смужка до наступного досягнення: наступна віха після рекорду, прогрес — поточна серія. */
-function NextGoal({ currentMs, recordMs }: { currentMs: number; recordMs: number }) {
+function NextGoal({ st }: { st: { currentMs: number; recordMs: number } }) {
+  const { currentMs, recordMs } = st
   const best = Math.floor(recordMs / DAY_MS)
   const next = DAY_MILESTONES.find(n => n > best)
   if (!next) return <div className="row-between small"><span className="fire b">Усі досягнення здобуто</span><span /></div>
@@ -83,7 +84,7 @@ function QuoteRotator() {
 }
 
 function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overlay) => void }) {
-  const { update } = useStore()
+  const { state, update } = useStore()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: a.id })
   const st = abstainStats(a, now)
   const cur = spanText(st.currentMs)
@@ -116,7 +117,7 @@ function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overla
           </div>
           <button className="btn-outline danger" onPointerDown={stop} onClick={e => { stop(e); onOpen({ type: 'relapse', id: a.id }) }}>Зірвався</button>
         </div>
-        <NextGoal currentMs={st.currentMs} recordMs={st.recordMs} />
+        <NextGoal st={abstainStats(clipAbstain(a, achFromFor(state, 'abst', a.id)), now)} />
         <div className="small">
           {!a.relapses.length
             ? <span className="muted">Жодного зриву</span>
@@ -204,7 +205,7 @@ export function AbstainDetail({ id, onClose, onOpen }: { id: string; onClose: ()
           <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
           <span className="abst-side"><span className="muted">{cur.unit}</span><span className="clock">{clock(st.currentMs)}</span></span>
         </div>
-        <NextGoal currentMs={st.currentMs} recordMs={st.recordMs} />
+        <NextGoal st={abstainStats(clipAbstain(a, achFromFor(state, 'abst', a.id)), now)} />
         <button className="btn danger-fill" style={{ marginTop: 6 }} onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
       </div>
       <div className="card trio4">

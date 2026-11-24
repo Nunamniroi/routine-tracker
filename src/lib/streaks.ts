@@ -313,7 +313,7 @@ export function abstainStats(a: Abstain, now: number): AbstainStats {
   const series: number[] = []
   for (let i = 1; i < bounds.length; i++) series.push(bounds[i] - bounds[i - 1])
   const lastStart = bounds[bounds.length - 1]
-  const currentMs = now - lastStart
+  const currentMs = Math.max(0, now - lastStart)
   const recordMs = Math.max(currentMs, ...series, 0)
   const prevBest = Math.max(0, ...series)
   const d = new Date(now)

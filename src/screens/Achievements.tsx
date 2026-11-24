@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store'
-import { achId, nextMilestone, tierOf, titleOf, tracks, type Achievement, type Tier, type Track } from '../lib/achievements'
+import { achId, nextMilestone, resetAchievements, tierOf, titleOf, trackKey, tracks, type Achievement, type Tier, type Track } from '../lib/achievements'
 import { DAYS, plural } from '../lib/date'
 import { Icon, Segmented } from '../ui/kit'
 
@@ -18,7 +18,7 @@ export function Badge({ n, unit, tier, locked, size = 64 }: { n: number; unit: '
   )
 }
 
-function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string, number>; defaultOpen?: boolean }) {
+function TrackCard({ t, earned, defaultOpen, onReset }: { t: Track; earned: Record<string, number>; defaultOpen?: boolean; onReset: () => void }) {
   const [open, setOpen] = useState(!!defaultOpen)
   const has = (n: number) => t.best >= n || !!earned[achId(t.scope, t.refId, n)]
   const got = t.milestones.filter(has)
@@ -42,7 +42,7 @@ function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string
         <span className="ach-count">{got.length}/{t.milestones.length}</span>
         <Icon name={open ? 'chevu' : 'chevd'} size={18} color="var(--muted)" />
       </button>
-      {open && (
+      {open && (<>
         <div className="medals">
           {shown.map(n => (
             <div className="medal-cell" key={n}>
@@ -51,7 +51,10 @@ function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string
             </div>
           ))}
         </div>
-      )}
+        <button className="link small reset-ach" onClick={() => {
+          if (confirm(`Скинути досягнення «${t.name}»? Відлік почнеться з нуля, історія відміток не зміниться.`)) onReset()
+        }}><Icon name="undo" size={14} /> Скинути досягнення</button>
+      </>)}
     </div>
   )
 }
@@ -59,8 +62,9 @@ function TrackCard({ t, earned, defaultOpen }: { t: Track; earned: Record<string
 type Tab = 'habit' | 'abst'
 
 export function AchievementsScreen() {
-  const { state, today, now } = useStore()
+  const { state, today, now, update } = useStore()
   const [tab, setTab] = useState<Tab>('habit')
+  const reset = (key: string) => update(s => resetAchievements(s, key))
   const earned = state.achievements ?? {}
   const ts = tracks(state, today, now)
   const total = ts.reduce((s, t) => s + t.milestones.length, 0)
@@ -82,10 +86,10 @@ export function AchievementsScreen() {
         </div>
         <Icon name="trophy" size={40} color="var(--grace)" />
       </div>
-      {globalTrack && <TrackCard t={globalTrack} earned={earned} />}
+      {globalTrack && <TrackCard t={globalTrack} earned={earned} onReset={() => reset(trackKey('global', ''))} />}
       <Segmented value={tab} onChange={setTab} options={[['habit', 'Справи'], ['abst', 'Не роблю']]} />
       {list.length
-        ? list.map(t => <TrackCard key={t.scope + t.refId} t={t} earned={earned} />)
+        ? list.map(t => <TrackCard key={t.scope + t.refId} t={t} earned={earned} onReset={() => reset(trackKey(t.scope, t.refId))} />)
         : <div className="muted center pad">Тут поки порожньо.</div>}
     </div>
   )

@@ -1,5 +1,6 @@
-import type { State } from './types'
+import type { Abstain, State } from './types'
 import { abstainStats, activeHabits, globalStreak, habitStreak } from './streaks'
+import { dayKey, cmpKey } from './date'
 
 export const DAY_MILESTONES = [1, 3, 5, 7, 10, 14, 21, 30, 45, 60, 90, 100, 150, 180, 200, 250, 300, 365, 500, 730, 1000]
 export const WEEK_MILESTONES = [1, 2, 4, 8, 12, 26, 52, 104]
@@ -54,16 +55,40 @@ export function titleOf(n: number, unit: 'days' | 'weeks') {
   return (unit === 'weeks' ? WEEK_TITLES[n] : DAY_TITLES[n]) ?? `${n}`
 }
 
+export const trackKey = (scope: Scope, refId: string) => `${scope}:${refId}`
+
+/** З якого моменту рахувати досягнення для треку (після «Скинути»), або 0 */
+export function achFromFor(state: State, scope: Scope, refId: string): number {
+  const f = state.achFrom ?? {}
+  return Math.max(f.all ?? 0, f[trackKey(scope, refId)] ?? 0)
+}
+
+/** «Не роблю» так, ніби відлік почався не раніше from */
+export function clipAbstain(a: Abstain, from: number): Abstain {
+  if (!from || a.startAt >= from) return a
+  return { ...a, startAt: from, relapses: a.relapses.filter(r => r.at >= from) }
+}
+
+/** Стан так, ніби історія починається з from (для рутини) */
+function clipState(state: State, from: number): State {
+  if (!from) return state
+  const k = dayKey(from, state.settings.dayStartHour)
+  const days: State['days'] = {}
+  for (const [d, l] of Object.entries(state.days)) if (cmpKey(d, k) >= 0) days[d] = l
+  return { ...state, days, habits: state.habits.map(h => (cmpKey(h.createdAt, k) < 0 ? { ...h, createdAt: k } : h)) }
+}
+
 export function tracks(state: State, today: string, now: number): Track[] {
   const out: Track[] = []
-  const g = globalStreak(state, today)
+  const g = globalStreak(clipState(state, achFromFor(state, 'global', '')), today)
   out.push({ scope: 'global', refId: '', name: 'Загальний стрік', unit: 'days', current: g.count, best: g.record, milestones: DAY_MILESTONES })
   for (const h of activeHabits(state)) {
-    const st = habitStreak(state, h, today)
+    const from = achFromFor(state, 'habit', h.id)
+    const st = habitStreak(clipState(state, from), from ? { ...h, createdAt: clipState(state, from).habits.find(x => x.id === h.id)!.createdAt } : h, today)
     out.push({ scope: 'habit', refId: h.id, name: h.name, unit: st.unit, current: st.count, best: st.record, milestones: st.unit === 'weeks' ? WEEK_MILESTONES : DAY_MILESTONES })
   }
   for (const a of state.abstains.filter(x => !x.archived)) {
-    const st = abstainStats(a, now)
+    const st = abstainStats(clipAbstain(a, achFromFor(state, 'abst', a.id)), now)
     const day = 86400000
     out.push({ scope: 'abst', refId: a.id, name: a.name, unit: 'days', current: Math.floor(st.currentMs / day), best: Math.floor(st.recordMs / day), milestones: DAY_MILESTONES })
   }
@@ -83,4 +108,20 @@ export function earnedNow(state: State, today: string, now: number): Achievement
 
 export function nextMilestone(t: Track): number | null {
   return t.milestones.find(n => n > t.best) ?? null
+}
+
+/** Скинути досягнення: одного треку (key = 'scope:refId') або всі ('all').
+ *  Відлік починається з цього моменту; те, що вже є з нового відліку (напр. сьогоднішня відмітка), зараховується тихо, без вітання. */
+export function resetAchievements(s: State, key: string, now = Date.now()) {
+  s.achFrom ??= {}
+  s.achievements ??= {}
+  if (key === 'all') {
+    s.achFrom = { all: now }
+    s.achievements = {}
+  } else {
+    s.achFrom[key] = now
+    for (const id of Object.keys(s.achievements)) if (id.startsWith(key + ':')) delete s.achievements[id]
+  }
+  const today = dayKey(now, s.settings.dayStartHour)
+  for (const a of earnedNow(s, today, now)) s.achievements[a.id] ??= now
 }

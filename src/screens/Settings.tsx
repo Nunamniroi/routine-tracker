@@ -7,6 +7,7 @@ import { Chips, Icon, Label, Screen, Segmented, Sheet, Stepper, Switch, parseDur
 import { fmtDuration } from '../lib/date'
 import type { Overlay } from '../App'
 import { THEME_NAMES, themeBounds } from '../ui/theme'
+import { resetAchievements } from '../lib/achievements'
 import { KYIV } from '../ui/sun'
 
 function download(name: string, data: string, type: string) {
@@ -141,6 +142,7 @@ export function SettingsScreen({ onClose, onOpen }: { onClose: () => void; onOpe
         <button className="list-row" onClick={() => download(`routine-${today}.csv`, toCSV(state), 'text/csv;charset=utf-8')}><Icon name="dl" size={18} color="var(--muted)" /><div className="list-main"><div>Експорт у CSV</div><div className="muted small">для Excel / Google Sheets</div></div></button>
         <button className="list-row" onClick={() => download(`routine-backup-${today}.json`, JSON.stringify(state), 'application/json')}><Icon name="up" size={18} color="var(--muted)" /><div className="list-main"><div>Зберегти резервну копію</div><div className="muted small">файл .json — зберігай у хмарі</div></div></button>
         <button className="list-row" onClick={() => file.current?.click()}><Icon name="undo" size={18} color="var(--muted)" /><div className="list-main"><div>Відновити з копії</div><div className="muted small">замінить поточні дані</div></div></button>
+        <button className="list-row" onClick={() => { if (confirm('Скинути ВСІ досягнення? Відлік почнеться з нуля. Відмітки, стріки й історія зривів не зміняться.')) update(s => resetAchievements(s, 'all')) }}><Icon name="trophy" size={18} color="var(--reset)" /><div className="list-main"><div style={{ color: 'var(--reset)' }}>Скинути всі досягнення</div><div className="muted small">історія відміток лишається</div></div></button>
         <input ref={file} type="file" accept="application/json,.json" hidden onChange={e => e.target.files?.[0] && restore(e.target.files[0])} />
       </div>
       <div className="muted small center pad">Трекер рутини · v1</div>

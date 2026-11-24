@@ -326,3 +326,4 @@ html[data-theme="noon"] .card, html[data-theme="noon"] .hrow { box-shadow: 0 1px
 .sheet { background: color-mix(in srgb, var(--surface) 100%, transparent); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 html[data-theme="evening"] .sheet, html[data-theme="night"] .sheet { background: color-mix(in srgb, var(--bg) 92%, transparent); }
 
+.reset-ach { color: var(--reset); align-self: flex-start; margin-top: 2px; display: inline-flex; align-items: center; gap: 4px; }

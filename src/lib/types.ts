@@ -81,4 +81,5 @@ export interface State {
   settings: Settings
   onboarded: boolean
   achievements?: Record<string, number> // id → коли отримано (ms)
+  achFrom?: Record<string, number> // 'all' або 'scope:refId' → з якого моменту рахувати досягнення заново
 }
