@@ -78,7 +78,7 @@ function RoutineStats({ onOpen }: { onOpen: (o: Overlay) => void }) {
             <button className="stat-row-head" onClick={() => setOpen(isOpen ? null : h.id)}>
               <div>
                 <div>{h.name}</div>
-                <div className="muted small"><Icon name="flame" size={12} color="var(--fire)" /> {streakLabel(st.count, st.unit)} · рекорд {st.record}</div>
+                <div className="muted small"><Icon name="flame" size={14} color="var(--fire)" /> {streakLabel(st.count, st.unit)} · рекорд {st.record}</div>
               </div>
               <div className="dots">{dots.map((d, i) => <i key={i} className={'dot ' + d} />)}</div>
             </button>

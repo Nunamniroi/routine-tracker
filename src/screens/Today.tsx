@@ -32,7 +32,7 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
   }
 
   let meta: string
-  if (grace) meta = 'вчора пропуск · сьогодні треба'
+  if (grace) meta = 'пощада — зроби сьогодні'
   else {
     meta = streakLabel(st.count, st.unit)
     if (h.schedule.type === 'perWeek') meta += ` · ціль ${h.schedule.n}/тиж`
@@ -47,7 +47,7 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
       <button className="hrow-body" onClick={() => onOpen({ type: 'value', habitId: h.id, key: dateKey })}>
         <div className="hrow-name">{h.name}</div>
         <div className={'hrow-meta' + (grace ? ' grace' : '')}>
-          <Icon name={grace ? 'heart' : 'flame'} size={13} color={grace ? 'var(--grace)' : done ? 'var(--fire)' : 'var(--muted)'} />
+          <Icon name={grace ? 'heart' : 'flame'} size={15} color={grace ? 'var(--grace)' : done ? 'var(--fire)' : 'var(--muted)'} />
           <span>{meta}</span>
         </div>
       </button>
