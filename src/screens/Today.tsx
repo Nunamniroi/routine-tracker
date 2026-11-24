@@ -73,7 +73,7 @@ function Section({ routine, habits, onOpen, collapsed, onToggle }: { routine: Ro
       <button className="collapsed" onClick={onToggle}>
         <Icon name={isM ? 'sun' : 'moon'} size={20} color={isM ? 'var(--morning)' : 'var(--evening)'} />
         <span className="collapsed-title">{isM ? 'Ранок' : 'Вечір'}</span>
-        <span className="badge done">✓ {doneN} з {habits.length}</span>
+        <span className={'badge ' + (doneN === habits.length ? 'done' : doneN ? 'part' : 'none')}>{doneN === habits.length ? '✓ ' : ''}{doneN} з {habits.length}</span>
         <span className="spacer" />
         <span className="muted small">розгорнути</span>
         <Icon name="chevd" size={18} color="var(--muted)" />
@@ -147,7 +147,10 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
         <div className="banner grace"><Icon name="heart" size={20} /> <div><b>Вчора неповний день</b><div className="small">Сьогодні потрібен повний — інакше стрік обнулиться</div></div></div>
       )}
       {showEveningNudge && (
-        <div className="banner evening"><Icon name="bell" size={20} /> <div><b>Ще жодної вечірньої справи</b><div className="small">Зроби хоча б одну — і день зарахується</div></div></div>
+        <div className="banner evening"><Icon name="bell" size={20} /> <div>
+          <b>{p.morningDone ? 'Ще жодної вечірньої справи' : 'Сьогодні ще нічого не відмічено'}</b>
+          <div className="small">{p.morningDone ? 'Зроби хоча б одну — і день зарахується' : 'Для повного дня — хоча б 1 ранкова і 1 вечірня справа'}</div>
+        </div></div>
       )}
       {!paused && g.todayFull && <div className="banner ok"><Icon name="check" size={18} /> <div><b>День зараховано</b><div className="small">Стрік +1</div></div></div>}
 

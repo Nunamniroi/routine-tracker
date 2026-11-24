@@ -35,6 +35,13 @@ function unlockAudio() {
   } catch { /* empty */ }
 }
 
+const p2 = (n: number) => String(n).padStart(2, '0')
+function fmtClock(sec: number) {
+  sec = Math.max(0, Math.floor(sec))
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60
+  return h ? `${h}:${p2(m)}:${p2(s)}` : `${p2(m)}:${p2(s)}`
+}
+
 const prefKey = 'timer-prefs'
 function loadPrefs() {
   try { return { minute: true, goal: true, ...JSON.parse(localStorage.getItem(prefKey) || '{}') } } catch { return { minute: true, goal: true } }
@@ -125,7 +132,7 @@ export function Timer({ habitId, dateKey, onClose }: { habitId: string; dateKey:
           </svg>
           <div className="ring-center">
             {best != null && <div className="fire small b">рекорд {fmtDuration(best)}</div>}
-            <div className="timer-num">{over ? '+' + fmtDuration(elapsed - goal) : fmtDuration(display)}</div>
+            <div className="timer-num">{over ? '+' + fmtClock(elapsed - goal) : fmtClock(display)}</div>
             <div className="muted small">{goal ? (elapsed >= goal ? `ціль ${fmtDuration(goal)} ✓ · всього ${fmtDuration(elapsed)}` : `ціль ${fmtDuration(goal)} · ще ${fmtDuration(goal - elapsed)}`) : 'без цілі'}</div>
           </div>
         </div>
