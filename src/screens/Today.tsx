@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, closestCenter, useDroppable, useSensor, useSensors, type DragEndEvent, type DragOverEvent, type DragStartEvent } from '@dnd-kit/core'
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useStore } from '../lib/store'
 import { activeHabits, dayParts, globalStreak, habitStreak, isPaused, isScheduled, bestValue } from '../lib/streaks'
 import type { Habit, Routine } from '../lib/types'
@@ -63,12 +66,23 @@ export function HabitRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; on
   )
 }
 
-function Section({ routine, habits, onOpen, collapsed, onToggle }: { routine: Routine; habits: Habit[]; onOpen: (o: Overlay) => void; collapsed: boolean; onToggle: () => void }) {
+function SortableRow({ h, dateKey, onOpen }: { h: Habit; dateKey: string; onOpen: (o: Overlay) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: h.id })
+  return (
+    <div ref={setNodeRef} className="sortable" {...attributes} {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 }}>
+      <HabitRow h={h} dateKey={dateKey} onOpen={onOpen} />
+    </div>
+  )
+}
+
+function Section({ routine, habits, onOpen, collapsed, onToggle, dragging }: { routine: Routine; habits: Habit[]; onOpen: (o: Overlay) => void; collapsed: boolean; onToggle: () => void; dragging: boolean }) {
   const { state, today } = useStore()
+  const { setNodeRef, isOver } = useDroppable({ id: routine })
   const doneN = habits.filter(h => state.days[today]?.entries[h.id]?.done).length
   const isM = routine === 'morning'
-  if (!habits.length) return null
-  if (collapsed) {
+  if (!habits.length && !dragging) return null
+  if (collapsed && !dragging) {
     return (
       <button className="collapsed" onClick={onToggle}>
         <Icon name={isM ? 'sun' : 'moon'} size={20} color={isM ? 'var(--morning)' : 'var(--evening)'} />
@@ -81,15 +95,18 @@ function Section({ routine, habits, onOpen, collapsed, onToggle }: { routine: Ro
     )
   }
   return (
-    <div className="section">
-      <button className="section-head" onClick={onToggle}>
+    <div className={'section' + (dragging && isOver ? ' drop-over' : '')} ref={setNodeRef}>
+      <button className="section-head" onClick={onToggle} disabled={dragging}>
         <Icon name={isM ? 'sun' : 'moon'} size={20} color={isM ? 'var(--morning)' : 'var(--evening)'} />
         <span className="section-title">{isM ? 'Ранок' : 'Вечір'}</span>
         <span className="spacer" />
         <span className="muted">{doneN} з {habits.length}</span>
         <Icon name="chevu" size={16} color="var(--muted)" />
       </button>
-      {habits.map(h => <HabitRow key={h.id} h={h} dateKey={today} onOpen={onOpen} />)}
+      <SortableContext id={routine} items={habits.map(h => h.id)} strategy={verticalListSortingStrategy}>
+        {habits.map(h => <SortableRow key={h.id} h={h} dateKey={today} onOpen={onOpen} />)}
+      </SortableContext>
+      {dragging && !habits.length && <div className="drop-empty">Перетягни сюди</div>}
     </div>
   )
 }
@@ -110,6 +127,57 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
   const morningCollapsed = manual.morning ?? (eveningFirst && p.morningDone > 0 || morningAllDone)
   const eveningCollapsed = manual.evening ?? false
   const toggle = (r: Routine, cur: boolean) => setManual(m => ({ ...m, [r]: !cur }))
+
+  const { update } = useStore()
+  const [drag, setDrag] = useState<{ id: string; items: Record<Routine, string[]> } | null>(null)
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 300, tolerance: 8 } }),
+  )
+  const base: Record<Routine, string[]> = { morning: morning.map(h => h.id), evening: evening.map(h => h.id) }
+  const cur = drag?.items ?? base
+  const byId = (id: string) => all.find(h => h.id === id)!
+  const findC = (id: string, items: Record<Routine, string[]>): Routine | null =>
+    id === 'morning' || id === 'evening' ? id : items.morning.includes(id) ? 'morning' : items.evening.includes(id) ? 'evening' : null
+
+  const onDragStart = (e: DragStartEvent) => { setDrag({ id: String(e.active.id), items: base }); navigator.vibrate?.(25) }
+  const onDragOver = ({ active, over }: DragOverEvent) => {
+    if (!over || !drag) return
+    const id = String(active.id), overId = String(over.id)
+    setDrag(d => {
+      if (!d) return d
+      const a = findC(id, d.items), o = findC(overId, d.items)
+      if (!a || !o || a === o) return d
+      const from = d.items[a].filter(x => x !== id)
+      const idx = d.items[o].indexOf(overId)
+      const to = [...d.items[o]]
+      to.splice(idx < 0 ? to.length : idx, 0, id)
+      return { ...d, items: { ...d.items, [a]: from, [o]: to } }
+    })
+  }
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!drag) return
+    let items = drag.items
+    const id = String(active.id)
+    if (over) {
+      const a = findC(id, items), o = findC(String(over.id), items)
+      if (a && a === o) {
+        const oi = items[a].indexOf(id), ni = items[a].indexOf(String(over.id))
+        if (ni >= 0 && oi !== ni) items = { ...items, [a]: arrayMove(items[a], oi, ni) }
+      }
+    }
+    setDrag(null)
+    if (JSON.stringify(items) === JSON.stringify(base)) return
+    update(s => {
+      const shown = new Set([...items.morning, ...items.evening])
+      const hidden = (r: Routine) => s.habits.filter(h => !h.archived && h.routine === r && !shown.has(h.id)).sort((x, y) => x.order - y.order).map(h => h.id)
+      const finalM = [...items.morning, ...hidden('morning')]
+      const finalE = [...items.evening, ...hidden('evening')]
+      let k = 0
+      for (const hid of finalM) { const h = s.habits.find(x => x.id === hid)!; h.routine = 'morning'; h.order = k++ }
+      for (const hid of finalE) { const h = s.habits.find(x => x.id === hid)!; h.routine = 'evening'; h.order = k++ }
+    })
+  }
 
   const showEveningNudge = !paused && hour >= 18 && p.eveningDone === 0 && evening.length > 0
   const order: Routine[] = eveningFirst ? ['evening', 'morning'] : ['morning', 'evening']
@@ -154,11 +222,17 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
       )}
       {!paused && g.todayFull && <div className="banner ok"><Icon name="check" size={18} /> <div><b>День зараховано</b><div className="small">Стрік +1</div></div></div>}
 
-      {order.map(r => {
-        const list = r === 'morning' ? morning : evening
-        const col = r === 'morning' ? morningCollapsed : eveningCollapsed
-        return <Section key={r} routine={r} habits={list} collapsed={col} onToggle={() => toggle(r, col)} onOpen={onOpen} />
-      })}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={() => setDrag(null)}>
+        {order.map(r => {
+          const list = cur[r].map(byId).filter(Boolean)
+          const col = r === 'morning' ? morningCollapsed : eveningCollapsed
+          return <Section key={r} routine={r} habits={list} collapsed={col} onToggle={() => toggle(r, col)} onOpen={onOpen} dragging={!!drag} />
+        })}
+        <DragOverlay>
+          {drag ? <div className="drag-ghost"><HabitRow h={byId(drag.id)} dateKey={today} onOpen={() => {}} /></div> : null}
+        </DragOverlay>
+      </DndContext>
+      {!drag && <div className="muted small center hint">Утримуй справу, щоб перетягнути</div>}
 
       <MoodCard dateKey={today} />
 

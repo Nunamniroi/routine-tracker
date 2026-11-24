@@ -235,3 +235,10 @@ textarea.input { resize: none; }
 .ach-name { font-weight: 600; font-size: 16px; }
 .ach-count { color: var(--muted); font-weight: 600; font-size: 14px; }
 .bar.thin { height: 4px; margin-top: 3px; }
+
+/* перетягування */
+.sortable { touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.drag-ghost .hrow { box-shadow: 0 12px 32px rgba(0,0,0,.55), 0 0 0 2px var(--fire); transform: scale(1.02); }
+.section.drop-over { background: rgba(255, 122, 47, .06); border-radius: 18px; }
+.drop-empty { border: 1.5px dashed var(--border); border-radius: 14px; padding: 18px; text-align: center; color: var(--muted); }
+.hint { margin-top: -2px; opacity: .7; }
