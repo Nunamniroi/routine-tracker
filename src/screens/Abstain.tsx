@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore, uid } from '../lib/store'
 import { abstainStats, fmtSpan } from '../lib/streaks'
 import { DAYS, plural, humanDate, dayKey } from '../lib/date'
@@ -13,8 +13,26 @@ export function spanText(ms: number) {
   return { days, hours, unit: plural(days, DAYS) }
 }
 
+function useTick() {
+  const [t, setT] = useState(Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setT(Date.now()), 1000)
+    const onVis = () => setT(Date.now())
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', onVis) }
+  }, [])
+  return t
+}
+
+const p2 = (n: number) => String(n).padStart(2, '0')
+function clock(ms: number) {
+  const s = Math.max(0, Math.floor(ms / 1000)) % 86400
+  return `${p2(Math.floor(s / 3600))}:${p2(Math.floor((s % 3600) / 60))}:${p2(s % 60)}`
+}
+
 export function AbstainScreen({ onOpen }: { onOpen: (o: Overlay) => void }) {
-  const { state, now, update } = useStore()
+  const { state, update } = useStore()
+  const now = useTick()
   const list = state.abstains.filter(a => !a.archived).sort((a, b) => a.order - b.order)
 
   const undo = (a: A) => update(s => {
@@ -43,7 +61,10 @@ export function AbstainScreen({ onOpen }: { onOpen: (o: Overlay) => void }) {
             <div className="row-between">
               <div className="abst-num">
                 <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
-                <span className="muted">{cur.unit}{cur.days < 30 ? ` ${cur.hours} год` : ''}</span>
+                <span className="abst-side">
+                  <span className="muted">{cur.unit}</span>
+                  <span className="clock">{clock(st.currentMs)}</span>
+                </span>
               </div>
               <button className="btn-outline danger" onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
             </div>

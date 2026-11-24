@@ -28,8 +28,8 @@ p { margin: 6px 0 12px; }
 .right { text-align: right; } .ok-t { color: var(--done); } .bad-t { color: var(--reset); }
 
 .card { background: var(--surface); border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
-.big-num { font-family: Unbounded, Onest, sans-serif; font-weight: 600; font-size: 40px; line-height: 1; }
-.big-num.sm { font-size: 30px; }
+.big-num { font-family: Oswald, Onest, sans-serif; font-weight: 600; font-size: 52px; line-height: .95; font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.big-num.sm { font-size: 38px; }
 
 .streak-card { flex-direction: row; justify-content: space-between; align-items: center; }
 .streak-num { display: flex; align-items: baseline; gap: 8px; margin: 6px 0; }
@@ -186,7 +186,7 @@ textarea.input { resize: none; }
 .ring-wrap { position: relative; width: min(280px, 72vw); margin: 4px auto; }
 .ring { width: 100%; display: block; }
 .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-.timer-num { font-family: Unbounded, sans-serif; font-weight: 600; font-size: clamp(40px, 13vw, 54px); font-variant-numeric: tabular-nums; }
+.timer-num { font-family: Oswald, sans-serif; font-weight: 600; font-size: clamp(56px, 19vw, 76px); line-height: 1; font-variant-numeric: tabular-nums; }
 .timer-actions { padding: 12px 16px calc(16px + var(--safe-b)); display: flex; flex-direction: column; gap: 10px; }
 .big-btn { height: 112px; border-radius: 32px; background: var(--fire); display: grid; place-items: center; }
 .big-btn.pause { background: var(--s2); }
@@ -202,3 +202,7 @@ textarea.input { resize: none; }
 
 .btn.primary:disabled { background: var(--s2); color: var(--muted); opacity: 1; }
 .list-row > span:first-child { flex: 1; }
+
+.abst-num { align-items: flex-end; gap: 12px; }
+.abst-side { display: flex; flex-direction: column; gap: 2px; padding-bottom: 4px; }
+.clock { font-family: Oswald, sans-serif; font-weight: 500; font-size: 22px; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: .03em; }
