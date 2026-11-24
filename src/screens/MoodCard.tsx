@@ -41,7 +41,7 @@ export function MoodCard({ dateKey, draft, onDraft }: {
             onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} />
           {(focused || (!draft && note)) && (
             <div className="row-between small">
-              <span className="muted">{draft ? 'Збережеться разом із днем' : note ? <><Icon name="check" size={14} color="var(--done)" /> Збережено — надсилати не треба</> : ''}</span>
+              <span className="muted">{draft ? 'Збережеться разом із днем' : note ? <><Icon name="check" size={14} color="var(--done)" /> Збережено</> : ''}</span>
               {focused && <button className="link small" onMouseDown={e => e.preventDefault()} onClick={() => ta.current?.blur()}>Готово</button>}
             </div>
           )}
