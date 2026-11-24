@@ -217,8 +217,8 @@ export function Today({ onOpen }: { onOpen: (o: Overlay) => void }) {
           <div className="muted small">Рекорд — {g.record} {plural(g.record, DAYS)}</div>
         </div>
         <div className="parts">
-          <div className={'part' + (p.morningDone ? ' ok' : '')}><Icon name="sun" size={16} /> Ранок {p.morningDone}/{p.morningTotal}</div>
-          <div className={'part' + (p.eveningDone ? ' ok' : ' ev')}><Icon name="moon" size={16} /> Вечір {p.eveningDone}/{p.eveningTotal}</div>
+          <div className={'part' + (p.morningDone ? ' ok-m' : '')}><Icon name="sun" size={16} /> Ранок {p.morningDone}/{p.morningTotal}</div>
+          <div className={'part' + (p.eveningDone ? ' ok-e' : '')}><Icon name="moon" size={16} /> Вечір {p.eveningDone}/{p.eveningTotal}</div>
         </div>
       </div>
 
