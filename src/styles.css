@@ -268,3 +268,6 @@ textarea.input { resize: none; }
 .center-self { align-self: center; }
 .locked-ui { opacity: .45; pointer-events: none; }
 .nowrap { white-space: nowrap; }
+.bar.goal { height: 8px; border-radius: 4px; margin-top: 8px; }
+.bar.goal .bar-fill { border-radius: 4px; transition: width .4s, background-color .4s; }
+.txt { color: var(--text); font-weight: 600; }

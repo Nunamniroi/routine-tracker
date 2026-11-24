@@ -10,8 +10,43 @@ import { justDragged, markDragEnd } from '../ui/dragGuard'
 import type { Abstain as A } from '../lib/types'
 import { Chips, Icon, Label, Screen, Segmented, Sheet } from '../ui/kit'
 import type { Overlay } from '../App'
+import { DAY_MILESTONES, titleOf } from '../lib/achievements'
 
 const UNDO_MS = 10 * 60 * 1000
+const DAY_MS = 86400000
+
+// червоний → жовтий → зелений (кольори теми: --reset, --grace, --done)
+const C_RED = [240, 82, 90], C_YEL = [245, 197, 66], C_GRN = [61, 220, 132]
+export function progressColor(p: number) {
+  const t = Math.max(0, Math.min(1, p))
+  const [a, b, k] = t < 0.5 ? [C_RED, C_YEL, t / 0.5] : [C_YEL, C_GRN, (t - 0.5) / 0.5]
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i] - v) * k)).join(',')})`
+}
+
+function leftText(ms: number) {
+  const m = Math.max(0, Math.ceil(ms / 60000))
+  const d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60
+  if (d) return h ? `${d} дн ${h} год` : `${d} дн`
+  if (h) return mm ? `${h} год ${mm} хв` : `${h} год`
+  return `${mm} хв`
+}
+
+/** Смужка до наступного досягнення: наступна віха після рекорду, прогрес — поточна серія. */
+function NextGoal({ currentMs, recordMs }: { currentMs: number; recordMs: number }) {
+  const best = Math.floor(recordMs / DAY_MS)
+  const next = DAY_MILESTONES.find(n => n > best)
+  if (!next) return <div className="row-between small"><span className="fire b">Усі досягнення здобуто</span><span /></div>
+  const p = Math.min(1, currentMs / (next * DAY_MS))
+  return (
+    <>
+      <div className="bar goal"><div className="bar-fill" style={{ width: `${Math.max(2, p * 100)}%`, background: progressColor(p) }} /></div>
+      <div className="row-between small">
+        <span className="muted">До «{titleOf(next, 'days')}» — ще <b className="txt">{leftText(next * DAY_MS - currentMs)}</b></span>
+        <span className="b" style={{ color: progressColor(p) }}>{Math.floor(p * 100)}%</span>
+      </div>
+    </>
+  )
+}
 
 export function spanText(ms: number) {
   const { days, hours } = fmtSpan(ms)
@@ -88,15 +123,15 @@ function AbstainCard({ a, now, onOpen }: { a: A; now: number; onOpen: (o: Overla
           </div>
           <button className="btn-outline danger" onPointerDown={stop} onClick={e => { stop(e); onOpen({ type: 'relapse', id: a.id }) }}>Зірвався</button>
         </div>
-        <div className="bar"><div className={'bar-fill' + (st.isRecord || !a.relapses.length ? ' fire' : '')} style={{ width: `${Math.max(2, pct * 100)}%` }} /></div>
-        <div className="row-between small">
+        <NextGoal currentMs={st.currentMs} recordMs={st.recordMs} />
+        <div className="small">
           {!a.relapses.length
-            ? <><span className="muted">Жодного зриву</span><span /></>
+            ? <span className="muted">Жодного зриву</span>
             : st.isRecord
-            ? <><span className="fire b">Новий рекорд</span><span className="fire">100%</span></>
-            : st.prevBestMs < 86400000
-            ? <><span className="muted">Минула серія — {spanShort(st.prevBestMs)}</span><span /></>
-            : <><span className="muted">Рекорд — {spanShort(st.recordMs)}</span><span className="muted">{Math.round(pct * 100)}% до рекорду</span></>}
+            ? <span className="fire b">Новий рекорд 🔥</span>
+            : st.prevBestMs < DAY_MS
+            ? <span className="muted">Минула серія — {spanShort(st.prevBestMs)}</span>
+            : <span className="muted">Рекорд — {spanShort(st.recordMs)} · {Math.round(pct * 100)}% від рекорду</span>}
         </div>
         {canUndo && a.relapses.length > 0 && (
           <button className="link small" onPointerDown={stop} onClick={e => { stop(e); undo() }}><Icon name="undo" size={14} /> Скасувати останній зрив</button>
@@ -176,7 +211,8 @@ export function AbstainDetail({ id, onClose, onOpen }: { id: string; onClose: ()
           <span className={'big-num' + (st.isRecord && a.relapses.length ? ' fire' : '')}>{cur.days}</span>
           <span className="abst-side"><span className="muted">{cur.unit}</span><span className="clock">{clock(st.currentMs)}</span></span>
         </div>
-        <button className="btn danger-fill" onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
+        <NextGoal currentMs={st.currentMs} recordMs={st.recordMs} />
+        <button className="btn danger-fill" style={{ marginTop: 6 }} onClick={() => onOpen({ type: 'relapse', id: a.id })}>Зірвався</button>
       </div>
       <div className="card trio4">
         <div><div className="muted small">Рекорд</div><b>{spanShort(st.recordMs, true)}</b></div>
